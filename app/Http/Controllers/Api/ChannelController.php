@@ -160,4 +160,53 @@ class ChannelController extends Controller
             return response()->json(['error' => 'Failed to get channel members'], 500);
         }
     }
+
+    /**
+     * チャンネルから退出
+     */
+    public function leave(string $id): JsonResponse
+    {
+        try {
+            $channel = $this->channelRepository->findById($id);
+            
+            if (!$channel) {
+                return response()->json(['error' => 'Channel not found'], 404);
+            }
+            
+            $currentUser = auth()->user();
+            
+            // ユーザーがチャンネルのメンバーであることを確認
+            if (!$this->memberRepository->isMember($id, $currentUser->id)) {
+                return response()->json(['error' => 'You are not a member of this channel'], 403);
+            }
+            
+            // 管理者の場合は、他の管理者がいるかチェック
+            if ($this->memberRepository->isAdmin($id, $currentUser->id)) {
+                $adminCount = $this->memberRepository->getAdminCount($id);
+                if ($adminCount <= 1) {
+                    return response()->json([
+                        'error' => 'Cannot leave channel',
+                        'message' => 'You are the only admin. Please transfer admin role or delete the channel.'
+                    ], 400);
+                }
+            }
+            
+            // チャンネルメンバーから削除
+            $this->memberRepository->removeMember($id, $currentUser->id);
+
+            Log::info('User left channel', [
+                'user_id' => $currentUser->id,
+                'channel_id' => $id
+            ]);
+
+            return response()->json(['message' => 'Successfully left the channel']);
+        } catch (\Exception $e) {
+            Log::error('Failed to leave channel', [
+                'error' => $e->getMessage(),
+                'channel_id' => $id,
+                'user_id' => auth()->id()
+            ]);
+            return response()->json(['error' => 'Failed to leave channel'], 500);
+        }
+    }
 }

@@ -198,11 +198,13 @@ const handleNewChannelAdded = async (newChannel) => {
         
         // エラーが発生した場合は、作成されたチャンネルを直接追加
         channels.value = channels.value.map(c => ({ ...c, active: false }));
-        const newChannelWithActiveState = { ...newChannel, active: true };
-        channels.value.unshift(newChannelWithActiveState);
-        activeChannel.value = newChannelWithActiveState;
+        channels.value.push({ ...newChannel, active: true });
+        activeChannel.value = channels.value.find(c => c.active);
         
-        console.log('Fallback: Added channel directly:', newChannelWithActiveState);
+        // 新しいチャンネルのメッセージを取得
+        if (activeChannel.value) {
+            await handleSelectChannel(activeChannel.value.id);
+        }
     }
 };
 
@@ -223,6 +225,42 @@ const handleMessageDeleted = (deletedId) => {
     const idx = messages.value.findIndex(msg => msg.id === deletedId);
     if (idx !== -1) messages.value.splice(idx, 1);
 };
+
+// チャンネル削除時の処理
+const handleChannelDeleted = async (channelId) => {
+    console.log('Channel deleted:', channelId);
+    
+    // 削除されたチャンネルをリストから削除
+    channels.value = channels.value.filter(c => c.id !== channelId);
+    
+    // 削除されたチャンネルがアクティブだった場合、最初のチャンネルをアクティブにする
+    if (activeChannel.value && activeChannel.value.id === channelId) {
+        if (channels.value.length > 0) {
+            await handleSelectChannel(channels.value[0].id);
+        } else {
+            activeChannel.value = null;
+            messages.value = [];
+        }
+    }
+};
+
+// チャンネル退出時の処理
+const handleChannelLeft = async (channelId) => {
+    console.log('Channel left:', channelId);
+    
+    // 退出したチャンネルをリストから削除
+    channels.value = channels.value.filter(c => c.id !== channelId);
+    
+    // 退出したチャンネルがアクティブだった場合、最初のチャンネルをアクティブにする
+    if (activeChannel.value && activeChannel.value.id === channelId) {
+        if (channels.value.length > 0) {
+            await handleSelectChannel(channels.value[0].id);
+        } else {
+            activeChannel.value = null;
+            messages.value = [];
+        }
+    }
+};
 </script>
 
 <template>
@@ -239,6 +277,8 @@ const handleMessageDeleted = (deletedId) => {
         @message-sent="handleMessageSent"
         @message-updated="handleMessageUpdated"
         @message-deleted="handleMessageDeleted"
+        @channel-deleted="handleChannelDeleted"
+        @channel-left="handleChannelLeft"
     >
     </AppLayout>
 </template>

@@ -50,4 +50,24 @@ class ChannelMemberRepository implements ChannelMemberRepositoryInterface
             ->where('role', 'admin')
             ->exists();
     }
+
+    /**
+     * チャンネルの管理者数を取得
+     */
+    public function getAdminCount(int $channelId): int
+    {
+        return ChannelMember::where('channel_id', $channelId)
+            ->where('role', 'admin')
+            ->count();
+    }
+
+    /**
+     * チャンネルメンバーを削除
+     */
+    public function removeMember(int $channelId, int $userId): bool
+    {
+        return ChannelMember::where('channel_id', $channelId)
+            ->where('user_id', $userId)
+            ->delete();
+    }
 } 
