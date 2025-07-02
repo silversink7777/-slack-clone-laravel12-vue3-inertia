@@ -58,6 +58,7 @@ Route::middleware([
     Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
 
     Route::get('/channels/search', [ChannelController::class, 'search'])->name('channels.search');
+    Route::get('/messages/search', [MessageController::class, 'search'])->name('messages.search');
 });
 
 // Admin認証ルート

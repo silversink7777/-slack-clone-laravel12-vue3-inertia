@@ -107,4 +107,18 @@ class MessageRepository implements MessageRepositoryInterface
         }
         return $query->orderBy('id', 'desc')->paginate($perPage)->withQueryString();
     }
+
+    /**
+     * ユーザーが参加しているチャンネルのメッセージを検索
+     */
+    public function searchByContent(string $query, array $channelIds, int $limit = 20): Collection
+    {
+        return Message::with(['user', 'channel'])
+            ->whereIn('channel_id', $channelIds)
+            ->where('content', 'like', '%' . $query . '%')
+            ->whereNull('deleted_at')
+            ->latest()
+            ->limit($limit)
+            ->get();
+    }
 } 

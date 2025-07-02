@@ -270,4 +270,54 @@ class MessageController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * メッセージを検索
+     */
+    public function search(Request $request): JsonResponse
+    {
+        try {
+            $query = $request->query('q', '');
+            $userId = auth()->id();
+            
+            if (empty($query)) {
+                return response()->json(['messages' => []]);
+            }
+            
+            // ユーザーが参加しているチャンネルIDを取得
+            $channelIds = \App\Models\ChannelMember::where('user_id', $userId)
+                ->pluck('channel_id')
+                ->toArray();
+            
+            if (empty($channelIds)) {
+                return response()->json(['messages' => []]);
+            }
+            
+            $messages = $this->messageRepository->searchByContent($query, $channelIds, 20);
+            
+            $formattedMessages = $messages->map(function ($message) {
+                return [
+                    'id' => $message->id,
+                    'content' => $message->content,
+                    'channel' => [
+                        'id' => $message->channel->id,
+                        'name' => $message->channel->name,
+                    ],
+                    'user' => [
+                        'id' => $message->user->id,
+                        'name' => $message->user->name,
+                        'avatar' => $message->user->profile_photo_url,
+                    ],
+                    'time' => $message->created_at->format('g:i A'),
+                    'date' => $message->created_at->format('M j, Y'),
+                    'created_at' => $message->created_at,
+                ];
+            });
+            
+            return response()->json(['messages' => $formattedMessages]);
+        } catch (\Exception $e) {
+            Log::error('Message search failed', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Message search failed'], 500);
+        }
+    }
 }

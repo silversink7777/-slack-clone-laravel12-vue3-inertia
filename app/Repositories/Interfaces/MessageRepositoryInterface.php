@@ -56,4 +56,9 @@ interface MessageRepositoryInterface
      * 管理画面用: 検索・ページネーション・ユーザー/チャンネル絞り込み
      */
     public function searchWithFilters(array $filters, int $perPage = 20);
+
+    /**
+     * ユーザーが参加しているチャンネルのメッセージを検索
+     */
+    public function searchByContent(string $query, array $channelIds, int $limit = 20): Collection;
 } 
