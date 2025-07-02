@@ -27,6 +27,12 @@ const showChannelMenu = ref(false);
 const selectedChannelForMenu = ref(null);
 const channelMenuPosition = ref({ x: 0, y: 0 });
 
+const searchQuery = ref('');
+const searching = ref(false);
+const searchError = ref('');
+const filteredChannels = ref([...safeChannels.value]);
+const isSearchMode = ref(false);
+
 const selectChannel = (id) => {
     emit('selectChannel', id);
 };
@@ -192,6 +198,71 @@ import { onUnmounted } from 'vue';
 onUnmounted(() => {
     document.removeEventListener('click', closeChannelMenu);
 });
+
+// debounceの自作関数を追加
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        const later = () => {
+            timeout = null;
+            func.apply(this, args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+const fetchSearchedChannels = debounce(async (q) => {
+    if (!q.trim()) {
+        filteredChannels.value = [...safeChannels.value];
+        searching.value = false;
+        searchError.value = '';
+        isSearchMode.value = false;
+        return;
+    }
+    
+    searching.value = true;
+    searchError.value = '';
+    isSearchMode.value = true;
+    
+    try {
+        const response = await axios.get('/channels/search', { params: { q: q.trim() } });
+        filteredChannels.value = response.data.channels.map(c => ({ 
+            ...c, 
+            active: safeChannels.value.find(s => s.id === c.id)?.active 
+        }));
+    } catch (e) {
+        console.error('Search error:', e);
+        searchError.value = '検索中にエラーが発生しました';
+        filteredChannels.value = [];
+    } finally {
+        searching.value = false;
+    }
+}, 300);
+
+const onSearchInput = () => {
+    fetchSearchedChannels(searchQuery.value);
+};
+
+const clearSearch = () => {
+    searchQuery.value = '';
+    filteredChannels.value = [...safeChannels.value];
+    searchError.value = '';
+    isSearchMode.value = false;
+};
+
+// 検索キーワードをハイライトする関数
+const highlightSearchTerm = (text, searchTerm) => {
+    if (!searchTerm) return text;
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return text.replace(regex, '<mark class="bg-yellow-200 text-black px-1 rounded">$1</mark>');
+};
+
+watch(safeChannels, (newChannels) => {
+    if (!searchQuery.value) {
+        filteredChannels.value = [...newChannels];
+    }
+}, { immediate: true });
 </script>
 
 <template>
@@ -206,20 +277,47 @@ onUnmounted(() => {
             </div>
             <ChevronDownIcon class="h-5 w-5" />
         </div>
+        <!-- 検索ボックス -->
+        <div class="p-2">
+            <div class="relative">
+                <input
+                    v-model="searchQuery"
+                    @input="onSearchInput"
+                    type="text"
+                    placeholder="チャンネル検索..."
+                    class="w-full px-2 py-1 pr-8 rounded border border-gray-300 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                />
+                <button 
+                    v-if="searchQuery"
+                    @click="clearSearch"
+                    class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    title="検索をクリア"
+                >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
         <div class="flex-1 overflow-y-auto p-2">
            <div class="mb-4">
                 <div class="flex items-center justify-between px-2">
                     <h2 class="text-sm font-bold flex items-center">
                         <ChevronDownIcon class="h-4 w-4 mr-1" />
-                        チャンネル
+                        {{ isSearchMode ? '検索結果' : 'チャンネル' }}
+                        <span v-if="isSearchMode" class="ml-2 text-xs text-gray-400">({{ filteredChannels.length }})</span>
                     </h2>
-                    <button @click="showAddChannelModal = true" class="text-slack-purple-light hover:text-white">
+                    <button 
+                        v-if="!isSearchMode"
+                        @click="showAddChannelModal = true" 
+                        class="text-slack-purple-light hover:text-white"
+                    >
                         <PlusIcon class="h-4 w-4" />
                     </button>
                 </div>
                 <ul>
                     <li
-                        v-for="channel in safeChannels"
+                        v-for="channel in filteredChannels"
                         :key="channel.id"
                         class="group flex items-center justify-between rounded px-2 py-1"
                         :class="{
@@ -229,7 +327,8 @@ onUnmounted(() => {
                     >
                         <div @click="selectChannel(channel.id)" class="flex items-center flex-1 cursor-pointer">
                             <HashtagIcon class="h-5 w-5 mr-2" />
-                            {{ channel.name }}
+                            <span v-if="isSearchMode && searchQuery" v-html="highlightSearchTerm(channel.name, searchQuery)"></span>
+                            <span v-else>{{ channel.name }}</span>
                         </div>
                         <div class="flex items-center space-x-1">
                             <!-- チャンネル管理者の場合のみ招待ボタンを表示 -->
@@ -252,6 +351,17 @@ onUnmounted(() => {
                         </div>
                     </li>
                 </ul>
+                <div v-if="searching" class="text-xs text-gray-400 px-2 py-1 flex items-center">
+                    <svg class="animate-spin h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    検索中...
+                </div>
+                <div v-if="searchError" class="text-xs text-red-400 px-2 py-1">{{ searchError }}</div>
+                <div v-if="!searching && !searchError && isSearchMode && filteredChannels.length === 0" class="text-xs text-gray-400 px-2 py-1">
+                    "{{ searchQuery }}" に一致するチャンネルが見つかりませんでした
+                </div>
            </div>
            <div class="mb-4">
                 <h2 class="text-sm font-bold px-2 flex items-center">

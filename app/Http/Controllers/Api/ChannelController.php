@@ -209,4 +209,25 @@ class ChannelController extends Controller
             return response()->json(['error' => 'Failed to leave channel'], 500);
         }
     }
+
+    /**
+     * チャンネル名で検索
+     */
+    public function search(Request $request): JsonResponse
+    {
+        try {
+            $q = $request->query('q', '');
+            $userId = auth()->id();
+            $channels = $this->channelRepository->searchByName($q, $userId);
+            return response()->json([
+                'channels' => $channels->map(fn ($channel) => [
+                    'id' => $channel->id,
+                    'name' => $channel->name,
+                ])
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to search channels', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to search channels'], 500);
+        }
+    }
 }

@@ -85,4 +85,16 @@ class ChannelRepository implements ChannelRepositoryInterface
             $query->where('user_id', $userId)->where('role', 'admin');
         })->where('id', $channelId)->exists();
     }
+
+    /**
+     * チャンネル名で部分一致検索（ユーザーが参加しているチャンネルのみ）
+     */
+    public function searchByName(string $q, int $userId): Collection
+    {
+        return Channel::whereHas('members', function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
+            ->where('name', 'like', "%$q%")
+            ->get();
+    }
 } 
