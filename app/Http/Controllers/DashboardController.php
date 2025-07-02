@@ -59,6 +59,8 @@ class DashboardController extends Controller
     public function index(Request $request): Response
     {
         $channels = $this->channelRepository->getByUserId(auth()->id());
+        $selectedChannelId = $request->query('channel');
+        $selectedMessageId = $request->query('message');
 
         $channelIds = $channels->pluck('id')->toArray();
         $messages = $this->messageRepository->getByUserChannels($channelIds)
@@ -77,14 +79,19 @@ class DashboardController extends Controller
             'channels_count' => $channels->count(),
             'messages_count' => $messages->count(),
             'channels' => $channels->toArray(),
+            'selected_channel_id' => $selectedChannelId,
+            'selected_message_id' => $selectedMessageId,
         ]);
 
         return Inertia::render('Dashboard', [
             'channels' => $channels->map(fn ($channel) => [
                 'id' => $channel->id,
                 'name' => $channel->name,
+                'active' => $selectedChannelId && $channel->id == $selectedChannelId,
             ]),
             'messages' => $messages,
+            'selectedChannelId' => $selectedChannelId,
+            'selectedMessageId' => $selectedMessageId,
         ]);
     }
 }

@@ -56,6 +56,9 @@ Route::middleware([
     // ユーザーAPI
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
+
+    Route::get('/channels/search', [ChannelController::class, 'search'])->name('channels.search');
+    Route::get('/messages/search', [MessageController::class, 'search'])->name('messages.search');
 });
 
 // Admin認証ルート
