@@ -1,0 +1,244 @@
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import AppLayout from '@/Layouts/AppLayout.vue';
+import axios from 'axios';
+
+const props = defineProps({
+    channels: Array,
+    messages: Array,
+});
+
+// デバッグ情報を追加
+console.log('=== Dashboard Component Debug ===');
+console.log('Dashboard props:', props);
+console.log('Channels prop type:', typeof props.channels);
+console.log('Channels prop:', props.channels);
+console.log('Channels prop length:', props.channels?.length);
+console.log('Messages prop type:', typeof props.messages);
+console.log('Messages prop:', props.messages);
+console.log('Messages prop length:', props.messages?.length);
+
+const channels = ref(
+    (props.channels || []).map((channel, index) => ({ ...channel, active: index === 0 }))
+);
+const messages = ref(props.messages || []);
+const activeChannel = ref(channels.value.find(c => c.active));
+
+console.log('Initial channels ref:', channels.value);
+console.log('Initial messages ref:', messages.value);
+console.log('Active channel:', activeChannel.value);
+
+const directMessages = ref([]);
+let onlineStatusInterval = null;
+const manualOffline = ref(false);
+
+// 初期化時にデフォルト値を設定
+const initializeDirectMessages = () => {
+    directMessages.value = [];
+};
+
+const setManualOffline = (value) => {
+    manualOffline.value = value;
+    if (manualOffline.value) {
+        // オフラインに切り替えたらAPIで即反映
+        axios.post('/user-online-status', { online: false });
+        if (onlineStatusInterval) clearInterval(onlineStatusInterval);
+    } else {
+        // オンラインに戻したらAPIで即反映し、interval再開
+        axios.post('/user-online-status', { online: true });
+        startOnlineInterval();
+    }
+};
+
+// オンライン状態APIからDMリストを取得
+const fetchOnlineStatus = async () => {
+    try {
+        console.log('Fetching online status...');
+        const response = await axios.get('/user-online-status');
+        console.log('Online status response:', response);
+        console.log('Response data:', response.data);
+        
+        if (response.data && Array.isArray(response.data)) {
+            console.log('Processing online status data...');
+            directMessages.value = response.data.map(status => {
+                console.log('Processing status:', status);
+                return {
+                    id: status.user_id,
+                    name: status.user?.name || 'Unknown',
+                    online: !!(status.online === true || status.online === 1 || status.online === '1'),
+                    active: false,
+                };
+            });
+            console.log('Final directMessages:', directMessages.value);
+        } else {
+            console.warn('Invalid response format from API');
+            directMessages.value = [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch user online status:', error);
+        directMessages.value = [];
+    }
+};
+
+function startOnlineInterval() {
+    if (onlineStatusInterval) clearInterval(onlineStatusInterval);
+    onlineStatusInterval = setInterval(async () => {
+        if (!manualOffline.value) {
+            try {
+                await axios.get('/user-online-status-update');
+            } catch (e) {}
+        }
+        try {
+            await fetchOnlineStatus();
+        } catch (e) {}
+    }, 10000);
+}
+
+onMounted(async () => {
+    console.log('=== Dashboard Component Mounted ===');
+    // 初期データを設定
+    channels.value = (props.channels || []).map((channel, index) => ({ ...channel, active: index === 0 }));
+    messages.value = props.messages || [];
+    activeChannel.value = channels.value.find(c => c.active);
+    
+    // DMリストを初期化
+    initializeDirectMessages();
+    
+    console.log('Mounted channels:', channels.value);
+    console.log('Mounted messages:', messages.value);
+    console.log('Mounted active channel:', activeChannel.value);
+    
+    // 最初のチャンネルのメッセージを読み込む
+    if (activeChannel.value) {
+        console.log('Loading messages for channel:', activeChannel.value.id);
+        handleSelectChannel(activeChannel.value.id);
+    } else {
+        console.log('No active channel found');
+    }
+
+    // 最初に自分のオンライン状態を更新
+    try {
+        console.log('Updating own online status...');
+        const token = document.head.querySelector('meta[name="csrf-token"]');
+        if (token) {
+            console.log('CSRF token found:', token.content);
+        } else {
+            console.warn('CSRF token not found');
+        }
+        await axios.get('/user-online-status-update');
+        console.log('Own online status updated successfully');
+    } catch (error) {
+        console.error('Failed to update own online status:', error);
+        if (error.response && error.response.status === 419) {
+            console.error('CSRF token error - page may need to be refreshed');
+        }
+    }
+
+    try {
+        await fetchOnlineStatus();
+    } catch (error) {
+        console.error('Initial fetchOnlineStatus failed:', error);
+        directMessages.value = [];
+    }
+    startOnlineInterval();
+});
+
+onUnmounted(() => {
+    if (onlineStatusInterval) clearInterval(onlineStatusInterval);
+});
+
+const handleSelectChannel = async (channelId) => {
+    // チャンネルのアクティブ状態を更新
+    channels.value = channels.value.map(c => ({
+        ...c,
+        active: c.id === channelId,
+    }));
+    activeChannel.value = channels.value.find(c => c.active);
+    
+    // 選択されたチャンネルのメッセージを取得
+    try {
+        const response = await axios.get(`/messages?channel_id=${channelId}`);
+        messages.value = response.data;
+    } catch (error) {
+        console.error('Failed to fetch messages:', error);
+        messages.value = [];
+    }
+};
+
+const handleNewChannelAdded = async (newChannel) => {
+    console.log('New channel added:', newChannel);
+    
+    // サーバーから最新のチャンネル一覧を再取得
+    try {
+        const response = await axios.get('/channels');
+        console.log('Channels API response:', response.data);
+        
+        const updatedChannels = response.data.channels || [];
+        console.log('Updated channels:', updatedChannels);
+        
+        // チャンネルリストを更新
+        channels.value = updatedChannels.map((channel) => ({ 
+            ...channel, 
+            active: channel.id === newChannel.id 
+        }));
+        
+        console.log('Updated channels.value:', channels.value);
+        
+        // アクティブなチャンネルを更新
+        activeChannel.value = channels.value.find(c => c.active);
+        console.log('Active channel:', activeChannel.value);
+        
+        // 新しいチャンネルのメッセージを取得
+        if (activeChannel.value) {
+            await handleSelectChannel(activeChannel.value.id);
+        }
+    } catch (error) {
+        console.error('Failed to refresh channels after creation:', error);
+        console.error('Error response:', error.response?.data);
+        
+        // エラーが発生した場合は、作成されたチャンネルを直接追加
+        channels.value = channels.value.map(c => ({ ...c, active: false }));
+        const newChannelWithActiveState = { ...newChannel, active: true };
+        channels.value.unshift(newChannelWithActiveState);
+        activeChannel.value = newChannelWithActiveState;
+        
+        console.log('Fallback: Added channel directly:', newChannelWithActiveState);
+    }
+};
+
+const handleMessageSent = (newMessage) => {
+    // メッセージリストに新しいメッセージを追加
+    messages.value.unshift(newMessage);
+};
+
+const handleMessageUpdated = (updatedMessage) => {
+    // メッセージリストを更新
+    const index = messages.value.findIndex(msg => msg.id === updatedMessage.id);
+    if (index !== -1) {
+        messages.value[index] = updatedMessage;
+    }
+};
+
+const handleMessageDeleted = (deletedId) => {
+    const idx = messages.value.findIndex(msg => msg.id === deletedId);
+    if (idx !== -1) messages.value.splice(idx, 1);
+};
+</script>
+
+<template>
+    <AppLayout
+        title="Dashboard"
+        :channels="channels"
+        :direct-messages="directMessages"
+        :messages="messages"
+        :active-channel="activeChannel"
+        :manual-offline="manualOffline"
+        @toggle-manual-offline="setManualOffline"
+        @select-channel="handleSelectChannel"
+        @new-channel-added="handleNewChannelAdded"
+        @message-sent="handleMessageSent"
+        @message-updated="handleMessageUpdated"
+        @message-deleted="handleMessageDeleted"
+    >
+    </AppLayout>
+</template>
