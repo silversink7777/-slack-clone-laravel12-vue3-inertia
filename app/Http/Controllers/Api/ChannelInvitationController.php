@@ -267,8 +267,15 @@ class ChannelInvitationController extends Controller
     public function respond(Request $request, string $invitationId): JsonResponse
     {
         try {
-            $invitation = $this->invitationRepository->findByIdWithRelations($invitationId, ['channel', 'invitee']);
+            Log::info('Invitation response request', [
+                'invitation_id' => $invitationId,
+                'request_data' => $request->all(),
+                'user_id' => auth()->id()
+            ]);
+
+            $invitation = $this->invitationRepository->findByIdWithRelations($invitationId, ['channel', 'inviter']);
             if (!$invitation) {
+                Log::warning('Invitation not found', ['invitation_id' => $invitationId]);
                 return response()->json([
                     'error' => 'Invitation not found',
                     'message' => 'The specified invitation does not exist'
@@ -276,10 +283,22 @@ class ChannelInvitationController extends Controller
             }
 
             $currentUser = auth()->user();
+            Log::info('Current user info', [
+                'user_id' => $currentUser->id,
+                'user_email' => $currentUser->email,
+                'invitation_invitee_id' => $invitation->invitee_id,
+                'invitation_invitee_email' => $invitation->invitee_email
+            ]);
 
             // 権限チェック: 招待されたユーザーのみ応答可能
             if ($invitation->invitee_id !== $currentUser->id && 
                 $invitation->invitee_email !== $currentUser->email) {
+                Log::warning('Unauthorized invitation response attempt', [
+                    'invitation_id' => $invitationId,
+                    'user_id' => $currentUser->id,
+                    'invitation_invitee_id' => $invitation->invitee_id,
+                    'invitation_invitee_email' => $invitation->invitee_email
+                ]);
                 return response()->json([
                     'error' => 'Unauthorized',
                     'message' => 'You can only respond to invitations sent to you'
@@ -288,6 +307,11 @@ class ChannelInvitationController extends Controller
 
             // 招待が有効かチェック
             if (!$invitation->isValid()) {
+                Log::warning('Invalid invitation response attempt', [
+                    'invitation_id' => $invitationId,
+                    'status' => $invitation->status,
+                    'expires_at' => $invitation->expires_at
+                ]);
                 return response()->json([
                     'error' => 'Invalid invitation',
                     'message' => 'This invitation has expired or is no longer valid'
@@ -299,16 +323,34 @@ class ChannelInvitationController extends Controller
             ]);
 
             if ($validated['action'] === 'accept') {
-                // チャンネルメンバーに追加
-                $this->memberRepository->create([
-                    'channel_id' => $invitation->channel_id,
-                    'user_id' => $currentUser->id,
-                    'role' => 'member',
-                ]);
+                // 既にメンバーかチェック
+                if ($this->memberRepository->isMember($invitation->channel_id, $currentUser->id)) {
+                    Log::info('User already a member, accepting invitation anyway', [
+                        'invitation_id' => $invitationId,
+                        'user_id' => $currentUser->id,
+                        'channel_id' => $invitation->channel_id
+                    ]);
+                } else {
+                    // チャンネルメンバーに追加
+                    $this->memberRepository->create([
+                        'channel_id' => $invitation->channel_id,
+                        'user_id' => $currentUser->id,
+                        'role' => 'member',
+                    ]);
+                    Log::info('User added to channel', [
+                        'invitation_id' => $invitationId,
+                        'user_id' => $currentUser->id,
+                        'channel_id' => $invitation->channel_id
+                    ]);
+                }
 
                 // メールアドレスによる招待の場合は、invitee_idを更新
                 if ($invitation->invitee_email && !$invitation->invitee_id) {
                     $this->invitationRepository->update($invitation, ['invitee_id' => $currentUser->id]);
+                    Log::info('Updated invitation invitee_id', [
+                        'invitation_id' => $invitationId,
+                        'invitee_id' => $currentUser->id
+                    ]);
                 }
 
                 $this->invitationRepository->accept($invitation);
@@ -345,6 +387,7 @@ class ChannelInvitationController extends Controller
         } catch (\Exception $e) {
             Log::error('Invitation response failed', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'invitation_id' => $invitationId,
                 'request_data' => $request->all()
             ]);
