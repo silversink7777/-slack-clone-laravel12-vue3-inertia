@@ -13,7 +13,7 @@ defineProps({
     manualOffline: Boolean,
 });
 
-const emit = defineEmits(['selectChannel', 'newChannelAdded', 'messageSent', 'messageUpdated', 'messageDeleted', 'toggleManualOffline']);
+const emit = defineEmits(['selectChannel', 'newChannelAdded', 'messageSent', 'messageUpdated', 'messageDeleted', 'toggleManualOffline', 'channelDeleted', 'channelLeft']);
 </script>
 
 <template>
@@ -29,6 +29,8 @@ const emit = defineEmits(['selectChannel', 'newChannelAdded', 'messageSent', 'me
                 @toggle-manual-offline="emit('toggleManualOffline', $event)"
                 @select-channel="id => emit('selectChannel', id)"
                 @new-channel-added="channel => emit('newChannelAdded', channel)"
+                @channel-deleted="id => emit('channelDeleted', id)"
+                @channel-left="id => emit('channelLeft', id)"
             />
             <div class="flex-1 flex flex-col">
                 <!-- 招待通知エリア -->

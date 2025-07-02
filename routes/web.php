@@ -32,6 +32,8 @@ Route::middleware([
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/channels', [ChannelController::class, 'index'])->name('channels.index');
     Route::post('/channels', [ChannelController::class, 'store'])->name('channels.store');
+    Route::delete('/channels/{id}', [ChannelController::class, 'destroy'])->name('channels.destroy');
+    Route::post('/channels/{id}/leave', [ChannelController::class, 'leave'])->name('channels.leave');
     Route::get('/channels/{id}/members', [ChannelController::class, 'members'])->name('channels.members');
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
     Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
