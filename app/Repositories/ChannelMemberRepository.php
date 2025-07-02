@@ -12,6 +12,11 @@ class ChannelMemberRepository implements ChannelMemberRepositoryInterface
      */
     public function create(array $data): ChannelMember
     {
+        // joined_atが設定されていない場合は現在時刻を設定
+        if (!isset($data['joined_at'])) {
+            $data['joined_at'] = now();
+        }
+        
         return ChannelMember::create($data);
     }
 

@@ -28,11 +28,21 @@ const selectChannel = (id) => {
 
 const handleCreateChannel = async (name) => {
     try {
-        const response = await axios.post('/channels', { name });
+        // CSRFトークンを取得
+        const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.content;
+        const response = await axios.post('/channels', { name }, {
+            headers: csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}
+        });
         emit('newChannelAdded', response.data);
         showAddChannelModal.value = false;
     } catch (error) {
-        // TODO: エラーハンドリングを実装
+        let msg = 'チャンネル作成に失敗しました';
+        if (error.response && error.response.status === 419) {
+            msg = 'セッションの有効期限が切れています。ページを再読み込みしてください。';
+        } else if (error.response && error.response.data && error.response.data.message) {
+            msg = error.response.data.message;
+        }
+        alert(msg);
         console.error('Channel creation failed:', error);
     }
 };
