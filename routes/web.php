@@ -14,8 +14,13 @@ use App\Http\Controllers\Admin\MessageManagementController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
@@ -29,7 +34,18 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    
+    // プロフィールルート
+    Route::get('/profile', function () {
+        $user = Auth::user();
+        $channels = $user->channels()->select('tbl_channels.id', 'tbl_channels.name')->get();
+        return Inertia::render('Profile/Show', [
+            'confirmsTwoFactorAuthentication' => false,
+            'sessions' => [],
+            'channels' => $channels,
+        ]);
+    })->name('profile.show');
     Route::get('/channels', [ChannelController::class, 'index'])->name('channels.index');
     Route::post('/channels', [ChannelController::class, 'store'])->name('channels.store');
     Route::delete('/channels/{id}', [ChannelController::class, 'destroy'])->name('channels.destroy');
