@@ -25,7 +25,7 @@ class FortifyServiceProvider extends ServiceProvider
      *
      * @var string
      */
-    public const HOME = '/dashboard';
+    public const HOME = '/';
 
     /**
      * Register any application services.
