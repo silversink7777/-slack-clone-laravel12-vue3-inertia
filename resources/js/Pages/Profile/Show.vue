@@ -1,5 +1,6 @@
 <script setup>
-import AppLayout from '@/Layouts/AppLayout.vue';
+import { router } from '@inertiajs/vue3';
+import InvitationLayout from '@/Layouts/InvitationLayout.vue';
 import DeleteUserForm from '@/Pages/Profile/Partials/DeleteUserForm.vue';
 import LogoutOtherBrowserSessionsForm from '@/Pages/Profile/Partials/LogoutOtherBrowserSessionsForm.vue';
 import SectionBorder from '@/Components/SectionBorder.vue';
@@ -10,17 +11,17 @@ import UpdateProfileInformationForm from '@/Pages/Profile/Partials/UpdateProfile
 defineProps({
     confirmsTwoFactorAuthentication: Boolean,
     sessions: Array,
+    channels: Array,
 });
+
+function handleSelectChannel(channelId) {
+    // ルートが / の場合はクエリでチャンネルIDを渡す
+    router.visit(`/?channel=${channelId}`);
+}
 </script>
 
 <template>
-    <AppLayout title="Profile">
-        <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Profile
-            </h2>
-        </template>
-
+    <InvitationLayout title="プロフィール" :channels="channels" @select-channel="handleSelectChannel">
         <div>
             <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8">
                 <div v-if="$page.props.jetstream.canUpdateProfileInformation">
@@ -53,5 +54,5 @@ defineProps({
                 </template>
             </div>
         </div>
-    </AppLayout>
+    </InvitationLayout>
 </template>

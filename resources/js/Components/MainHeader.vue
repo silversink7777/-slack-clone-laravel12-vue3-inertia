@@ -222,6 +222,18 @@ onUnmounted(() => {
                     v-if="showUserMenu"
                     class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
                 >
+                    <!-- プロフィールリンク（画像＋テキスト） -->
+                    <a
+                        :href="route('profile.show')"
+                        class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100"
+                    >
+                        <img
+                            :src="user?.profile_photo_url"
+                            :alt="user?.name"
+                            class="w-8 h-8 rounded-full object-cover mr-2 border border-gray-300"
+                        >
+                        <span>プロフィール</span>
+                    </a>
                     <button
                         @click="logout"
                         class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
