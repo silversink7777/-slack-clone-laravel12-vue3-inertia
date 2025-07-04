@@ -32,6 +32,7 @@ class User extends Authenticatable
         'name',
         'username',
         'email',
+        'theme_preference',
         'bio',
         'location',
         'website',

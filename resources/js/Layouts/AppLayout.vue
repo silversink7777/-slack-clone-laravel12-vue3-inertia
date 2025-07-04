@@ -20,7 +20,7 @@ const emit = defineEmits(['selectChannel', 'newChannelAdded', 'messageSent', 'me
     <div>
         <Head :title="title" />
 
-        <div class="flex h-screen bg-gray-100 text-gray-800">
+        <div class="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
             <WorkspaceSidebar />
             <ChannelListSidebar
                 :channels="channels"

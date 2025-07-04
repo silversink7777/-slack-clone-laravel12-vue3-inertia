@@ -52,12 +52,12 @@ const handleKeyPress = (event) => {
 </script>
 
 <template>
-    <div class="p-4 bg-white border-t border-gray-200">
-        <div class="border rounded-lg p-2 flex flex-col">
+    <div class="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-2 flex flex-col">
             <textarea
                 v-model="messageContent"
                 @keypress="handleKeyPress"
-                class="w-full border-none focus:ring-0 resize-none"
+                class="w-full border-none focus:ring-0 resize-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                 placeholder="メモを書く"
                 rows="1"
                 :disabled="isSending"
@@ -65,13 +65,13 @@ const handleKeyPress = (event) => {
 
             <div class="flex items-center justify-between mt-2">
                 <div class="flex items-center space-x-2">
-                    <button class="text-gray-500 hover:text-gray-800"><PlusIcon class="h-6 w-6" /></button>
-                    <button class="text-gray-500 hover:text-gray-800"><VideoCameraIcon class="h-6 w-6" /></button>
-                    <button class="text-gray-500 hover:text-gray-800"><MicrophoneIcon class="h-6 w-6" /></button>
+                    <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><PlusIcon class="h-6 w-6" /></button>
+                    <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><VideoCameraIcon class="h-6 w-6" /></button>
+                    <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><MicrophoneIcon class="h-6 w-6" /></button>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button class="text-gray-500 hover:text-gray-800"><FaceSmileIcon class="h-6 w-6" /></button>
-                    <button class="text-gray-500 hover:text-gray-800"><AtSymbolIcon class="h-6 w-6" /></button>
+                    <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><FaceSmileIcon class="h-6 w-6" /></button>
+                    <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><AtSymbolIcon class="h-6 w-6" /></button>
                     <button 
                         @click="sendMessage"
                         :disabled="!messageContent.trim() || isSending"

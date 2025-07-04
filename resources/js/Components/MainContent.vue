@@ -82,7 +82,7 @@ const isOwnMessage = (message) => {
 </script>
 
 <template>
-    <div class="flex-1 flex flex-col bg-white">
+    <div class="flex-1 flex flex-col bg-white dark:bg-gray-900">
         <MainHeader :active-channel="activeChannel" />
 
         <!-- Messages Area -->
@@ -91,20 +91,20 @@ const isOwnMessage = (message) => {
             <div
                 v-for="message in localMessages"
                 :key="message.id"
-                class="flex items-start mb-4 group hover:bg-gray-50 rounded-lg p-2 -m-2"
+                class="flex items-start mb-4 group hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg p-2 -m-2"
             >
                 <div class="w-10 h-10 rounded bg-purple-400 mr-4 shrink-0"></div>
                 <div class="flex-1">
                     <div class="flex items-center justify-between">
-                        <p class="font-bold">
+                        <p class="font-bold text-gray-900 dark:text-gray-100">
                             {{ message.user.name }}
-                            <span class="text-xs text-gray-500 font-normal ml-2">{{ message.time }}</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">{{ message.time }}</span>
                         </p>
                         <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                                 v-if="isOwnMessage(message)"
                                 @click="openEditModal(message)"
-                                class="text-gray-500 hover:text-gray-700 p-1 rounded"
+                                class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded"
                                 title="メッセージを編集"
                             >
                                 <PencilIcon class="h-4 w-4" />
@@ -112,7 +112,7 @@ const isOwnMessage = (message) => {
                             <button
                                 v-if="isOwnMessage(message)"
                                 @click="openDeleteModal(message)"
-                                class="text-red-500 hover:text-red-700 p-1 rounded"
+                                class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1 rounded"
                                 title="メッセージを削除"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
@@ -121,7 +121,7 @@ const isOwnMessage = (message) => {
                             </button>
                         </div>
                     </div>
-                    <p class="text-gray-800">{{ message.content }}</p>
+                    <p class="text-gray-800 dark:text-gray-200">{{ message.content }}</p>
                 </div>
             </div>
         </div>
