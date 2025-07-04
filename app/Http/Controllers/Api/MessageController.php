@@ -50,6 +50,10 @@ class MessageController extends Controller
                         'name' => $message->user->name,
                         'avatar' => $message->user->profile_photo_url,
                     ],
+                    'file_path' => $message->file_path,
+                    'file_name' => $message->file_name,
+                    'file_mime' => $message->file_mime,
+                    'file_size' => $message->file_size,
                     'time' => $message->created_at->format('g:i A'),
                     'created_at' => $message->created_at,
                 ]);
