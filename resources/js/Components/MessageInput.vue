@@ -19,6 +19,25 @@ const emit = defineEmits(['messageSent']);
 const messageContent = ref('');
 const isSending = ref(false);
 
+// 絵文字ピッカー表示制御
+const showEmojiPicker = ref(false);
+const emojiList = [
+    '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇',
+    '🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚',
+    '😋','😜','😝','😛','🤑','🤗','🤩','🤔','🤨','😐',
+    '😑','😶','🙄','😏','😣','😥','😮','🤐','😯','😪',
+    '😫','🥱','😴','😌','😛','😜','😝','🤤','😒','😓',
+    '😔','😕','🙃','🤑','😲','☹️','🙁','😖','😞','😟',
+    '😤','😢','😭','😦','😧','😨','😩','🤯','😬','😰',
+    '😱','🥵','🥶','😳','🤪','😵','😡','😠','🤬','😷',
+    '🤒','🤕','🤢','🤮','🥴','😇','🥳','🥺','🤠','😎',
+    '🤓','🧐','😕','🤑','🤡','🤥','🤫','🤭','🫢','🫣',
+    '🫡','🤗','🤔','🤭','🤫','🤥','🫠','🫨','🫤','🫦',
+    '👍','👎','👏','🙌','🙏','💪','👀','👋','🤙','💯',
+    '🔥','✨','🎉','🎊','❤️','🧡','💛','💚','💙','💜',
+    '🖤','🤍','🤎','💔','💕','💞','💓','💗','💖','💘',
+];
+
 const sendMessage = async () => {
     if (!messageContent.value.trim() || !props.activeChannel) {
         return;
@@ -49,20 +68,69 @@ const handleKeyPress = (event) => {
         sendMessage();
     }
 };
+
+// 絵文字をテキストエリアに挿入
+const insertEmoji = (emoji) => {
+    const el = document.activeElement;
+    if (el && el.selectionStart !== undefined) {
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            emoji +
+            messageContent.value.substring(end);
+        // カーソル位置を絵文字の後ろに
+        setTimeout(() => {
+            el.selectionStart = el.selectionEnd = start + emoji.length;
+            el.focus();
+        }, 0);
+    } else {
+        messageContent.value += emoji;
+    }
+    showEmojiPicker.value = false;
+};
+
+// ピッカー外クリックで閉じる
+const handleClickOutside = (event) => {
+    if (
+        showEmojiPicker.value &&
+        !event.target.closest('.emoji-picker-popover') &&
+        !event.target.closest('.emoji-picker-toggle')
+    ) {
+        showEmojiPicker.value = false;
+    }
+};
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('click', handleClickOutside);
+}
 </script>
 
 <template>
     <div class="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
         <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-2 flex flex-col">
-            <textarea
-                v-model="messageContent"
-                @keypress="handleKeyPress"
-                class="w-full border-none focus:ring-0 resize-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
-                placeholder="メモを書く"
-                rows="1"
-                :disabled="isSending"
-            ></textarea>
-
+            <div class="relative">
+                <textarea
+                    v-model="messageContent"
+                    @keypress="handleKeyPress"
+                    class="w-full border-none focus:ring-0 resize-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                    placeholder="メモを書く"
+                    rows="1"
+                    :disabled="isSending"
+                ></textarea>
+                <!-- シンプルな絵文字ピッカー -->
+                <div v-if="showEmojiPicker" class="emoji-picker-popover absolute left-0 bottom-12 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded shadow-lg p-2 w-80 max-h-60 overflow-y-auto flex flex-wrap gap-1">
+                    <button
+                        v-for="emoji in emojiList"
+                        :key="emoji"
+                        class="text-2xl p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                        @click.stop="insertEmoji(emoji)"
+                        type="button"
+                    >
+                        {{ emoji }}
+                    </button>
+                </div>
+            </div>
             <div class="flex items-center justify-between mt-2">
                 <div class="flex items-center space-x-2">
                     <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><PlusIcon class="h-6 w-6" /></button>
@@ -70,12 +138,20 @@ const handleKeyPress = (event) => {
                     <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><MicrophoneIcon class="h-6 w-6" /></button>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><FaceSmileIcon class="h-6 w-6" /></button>
+                    <button 
+                        class="emoji-picker-toggle text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+                        @click.stop="showEmojiPicker = !showEmojiPicker"
+                        title="絵文字を挿入"
+                        type="button"
+                    >
+                        <FaceSmileIcon class="h-6 w-6" />
+                    </button>
                     <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><AtSymbolIcon class="h-6 w-6" /></button>
                     <button 
                         @click="sendMessage"
                         :disabled="!messageContent.trim() || isSending"
                         class="bg-gray-800 text-white rounded p-1 hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        type="button"
                     >
                         <PaperAirplaneIcon class="h-5 w-5" />
                     </button>
