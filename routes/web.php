@@ -16,6 +16,12 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Http\Controllers\Api\ThemeController;
+
+// Sanctumルート
+Route::get('/sanctum/csrf-cookie', function () {
+    return response()->json(['message' => 'CSRF cookie set']);
+});
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -75,6 +81,9 @@ Route::middleware([
 
     Route::get('/channels/search', [ChannelController::class, 'search'])->name('channels.search');
     Route::get('/messages/search', [MessageController::class, 'search'])->name('messages.search');
+
+    Route::get('/theme', [ThemeController::class, 'getTheme'])->name('theme.get');
+    Route::post('/theme', [ThemeController::class, 'updateTheme'])->name('theme.update');
 });
 
 // Admin認証ルート

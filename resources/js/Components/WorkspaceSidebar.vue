@@ -49,7 +49,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="w-20 bg-slack-purple-darker text-white p-2">
+    <div class="w-20 bg-slack-purple-darker dark:bg-gray-900 text-white p-2">
         <!-- Workspace Icon -->
         <div class="rounded-lg bg-white text-purple-900 w-12 h-12 flex items-center justify-center text-2xl font-bold mb-4">
             T

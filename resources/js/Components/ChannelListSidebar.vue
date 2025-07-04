@@ -266,8 +266,8 @@ watch(safeChannels, (newChannels) => {
 </script>
 
 <template>
-    <div class="w-64 bg-slack-purple-dark text-slack-purple-light flex flex-col">
-        <div class="px-4 h-16 flex items-center justify-between font-bold text-white text-lg border-b border-purple-800">
+    <div class="w-64 bg-slack-purple-dark dark:bg-gray-800 text-slack-purple-light dark:text-gray-300 flex flex-col">
+        <div class="px-4 h-16 flex items-center justify-between font-bold text-white dark:text-gray-100 text-lg border-b border-purple-800 dark:border-gray-700">
             <span>test</span>
             <div class="flex items-center space-x-2">
                 <span :class="manualOffline ? 'bg-gray-400' : 'bg-green-500'" class="h-3 w-3 rounded-full inline-block"></span>
@@ -285,7 +285,7 @@ watch(safeChannels, (newChannels) => {
                     @input="onSearchInput"
                     type="text"
                     placeholder="チャンネル検索..."
-                    class="w-full px-2 py-1 pr-8 rounded border border-gray-300 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    class="w-full px-2 py-1 pr-8 rounded border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-500"
                 />
                 <button 
                     v-if="searchQuery"
@@ -399,22 +399,22 @@ watch(safeChannels, (newChannels) => {
         <!-- チャンネルメニュードロップダウン -->
         <div 
             v-if="showChannelMenu && selectedChannelForMenu"
-            class="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-48"
+            class="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 min-w-48"
             :style="{
                 left: channelMenuPosition.x + 'px',
                 top: channelMenuPosition.y + 'px'
             }"
         >
-            <div class="px-4 py-2 border-b border-gray-100">
-                <div class="font-medium text-gray-900">#{{ selectedChannelForMenu.name }}</div>
-                <div class="text-sm text-gray-500">チャンネルメニュー</div>
+            <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
+                <div class="font-medium text-gray-900 dark:text-gray-100">#{{ selectedChannelForMenu.name }}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">チャンネルメニュー</div>
             </div>
             
             <!-- 管理者の場合のみ削除オプションを表示 -->
             <button 
                 v-if="isChannelAdmin(selectedChannelForMenu.id)"
                 @click="handleDeleteChannel(selectedChannelForMenu.id)"
-                class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
+                class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center"
             >
                 <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -425,7 +425,7 @@ watch(safeChannels, (newChannels) => {
             <!-- 退出オプション（管理者でも一般メンバーでも表示） -->
             <button 
                 @click="handleLeaveChannel(selectedChannelForMenu.id)"
-                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center"
             >
                 <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { ChevronDownIcon, ClockIcon, MagnifyingGlassIcon, UserCircleIcon } from '@heroicons/vue/24/outline';
 import { router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
+import ThemeToggle from '@/Components/ThemeToggle.vue';
 
 defineProps({
     activeChannel: Object,
@@ -118,15 +119,16 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-6">
+    <div class="h-16 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between px-6">
         <div>
-            <button class="flex items-center font-bold">
+            <button class="flex items-center font-bold text-gray-900 dark:text-gray-100">
                 <span>{{ activeChannel?.name }}</span>
                 <ChevronDownIcon class="h-5 w-5 ml-1" />
             </button>
         </div>
         <div class="flex items-center space-x-4">
-            <ClockIcon class="h-6 w-6 text-gray-500" />
+            <ThemeToggle />
+            <ClockIcon class="h-6 w-6 text-gray-500 dark:text-gray-400" />
             <div class="relative search-container">
                 <MagnifyingGlassIcon class="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -135,7 +137,7 @@ onUnmounted(() => {
                     @focus="showSearchResults = true"
                     type="text"
                     placeholder="メッセージを検索する"
-                    class="bg-gray-100 rounded-md w-80 pl-10 pr-8 py-1.5 focus:ring-blue-500 focus:border-blue-500 border-transparent"
+                    class="bg-gray-100 dark:bg-gray-700 rounded-md w-80 pl-10 pr-8 py-1.5 focus:ring-blue-500 focus:border-blue-500 border-transparent text-gray-900 dark:text-gray-100"
                 >
                 <button 
                     v-if="searchQuery"
@@ -151,7 +153,7 @@ onUnmounted(() => {
                 <!-- 検索結果ドロップダウン -->
                 <div 
                     v-if="showSearchResults && (searchResults.length > 0 || searching || searchError)"
-                    class="absolute top-full left-0 right-0 mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-96 overflow-y-auto z-50"
+                    class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto z-50"
                 >
                     <!-- 検索中 -->
                     <div v-if="searching" class="p-4 text-center text-gray-500">
@@ -175,7 +177,7 @@ onUnmounted(() => {
                             v-for="message in searchResults" 
                             :key="message.id"
                             @click="selectSearchResult(message)"
-                            class="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                            class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                         >
                             <div class="flex items-start space-x-3">
                                 <div class="flex-shrink-0">
@@ -187,11 +189,11 @@ onUnmounted(() => {
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center space-x-2">
-                                        <span class="text-sm font-medium text-gray-900">{{ message.user.name }}</span>
-                                        <span class="text-xs text-gray-500">#{{ message.channel.name }}</span>
-                                        <span class="text-xs text-gray-400">{{ message.date }} {{ message.time }}</span>
+                                        <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ message.user.name }}</span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400">#{{ message.channel.name }}</span>
+                                        <span class="text-xs text-gray-400 dark:text-gray-500">{{ message.date }} {{ message.time }}</span>
                                     </div>
-                                    <div class="mt-1 text-sm text-gray-700">
+                                    <div class="mt-1 text-sm text-gray-700 dark:text-gray-300">
                                         <span v-html="highlightSearchTerm(message.content, searchQuery)"></span>
                                     </div>
                                 </div>
@@ -210,7 +212,7 @@ onUnmounted(() => {
             <div ref="userMenuRef" class="relative">
                 <button
                     @click="toggleUserMenu"
-                    class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none"
+                    class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
                 >
                     <UserCircleIcon class="h-8 w-8" />
                     <span class="text-sm font-medium">{{ user?.name }}</span>
@@ -220,23 +222,23 @@ onUnmounted(() => {
                 <!-- Dropdown Menu -->
                 <div
                     v-if="showUserMenu"
-                    class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
+                    class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700"
                 >
                     <!-- プロフィールリンク（画像＋テキスト） -->
                     <a
                         :href="route('profile.show')"
-                        class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100"
+                        class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700"
                     >
                         <img
                             :src="user?.profile_photo_url"
                             :alt="user?.name"
-                            class="w-8 h-8 rounded-full object-cover mr-2 border border-gray-300"
+                            class="w-8 h-8 rounded-full object-cover mr-2 border border-gray-300 dark:border-gray-600"
                         >
                         <span>プロフィール</span>
                     </a>
                     <button
                         @click="logout"
-                        class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                         ログアウト
                     </button>
