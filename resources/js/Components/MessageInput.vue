@@ -38,22 +38,51 @@ const emojiList = [
     '🖤','🤍','🤎','💔','💕','💞','💓','💗','💖','💘',
 ];
 
+const file = ref(null);
+const filePreview = ref(null);
+
+const handleFileChange = (e) => {
+    const f = e.target.files[0];
+    file.value = f || null;
+    if (f && f.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            filePreview.value = ev.target.result;
+        };
+        reader.readAsDataURL(f);
+    } else {
+        filePreview.value = null;
+    }
+};
+
+const clearFile = () => {
+    file.value = null;
+    filePreview.value = null;
+    // input要素の値もクリア
+    const input = document.getElementById('message-file-input');
+    if (input) input.value = '';
+};
+
 const sendMessage = async () => {
-    if (!messageContent.value.trim() || !props.activeChannel) {
+    if ((!messageContent.value.trim() && !file) || !props.activeChannel) {
         return;
     }
-
     isSending.value = true;
-
     try {
-        const response = await axios.post('/messages', {
-            content: messageContent.value.trim(),
-            channel_id: props.activeChannel.id,
-        });
-
-        // メッセージ送信成功
+        const formData = new FormData();
+        formData.append('content', messageContent.value.trim());
+        formData.append('channel_id', props.activeChannel.id);
+        if (file.value) {
+            formData.append('file', file.value);
+        }
+        // CSRFトークンをmetaから取得
+        const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.content;
+        const headers = { 'Content-Type': 'multipart/form-data' };
+        if (csrfToken) headers['X-CSRF-TOKEN'] = csrfToken;
+        const response = await axios.post('/messages', formData, { headers });
         emit('messageSent', response.data);
         messageContent.value = '';
+        clearFile();
     } catch (error) {
         console.error('Message sending failed:', error);
         // TODO: エラーメッセージをユーザーに表示
@@ -118,6 +147,14 @@ if (typeof window !== 'undefined') {
                     rows="1"
                     :disabled="isSending"
                 ></textarea>
+                <!-- ファイルプレビュー -->
+                <div v-if="filePreview" class="mt-2">
+                    <img :src="filePreview" alt="preview" class="max-h-32 rounded border" />
+                </div>
+                <div v-else-if="file && file.name" class="mt-2">
+                    <span class="text-xs text-gray-500">{{ file.name }}</span>
+                </div>
+                <button v-if="file" @click="clearFile" class="text-xs text-red-500 ml-2">ファイルを削除</button>
                 <!-- シンプルな絵文字ピッカー -->
                 <div v-if="showEmojiPicker" class="emoji-picker-popover absolute left-0 bottom-12 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded shadow-lg p-2 w-80 max-h-60 overflow-y-auto flex flex-wrap gap-1">
                     <button
@@ -133,7 +170,10 @@ if (typeof window !== 'undefined') {
             </div>
             <div class="flex items-center justify-between mt-2">
                 <div class="flex items-center space-x-2">
-                    <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><PlusIcon class="h-6 w-6" /></button>
+                    <label class="cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300">
+                        <PlusIcon class="h-6 w-6" />
+                        <input id="message-file-input" type="file" class="hidden" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" @change="handleFileChange" />
+                    </label>
                     <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><VideoCameraIcon class="h-6 w-6" /></button>
                     <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><MicrophoneIcon class="h-6 w-6" /></button>
                 </div>
@@ -149,7 +189,7 @@ if (typeof window !== 'undefined') {
                     <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><AtSymbolIcon class="h-6 w-6" /></button>
                     <button 
                         @click="sendMessage"
-                        :disabled="!messageContent.trim() || isSending"
+                        :disabled="(!messageContent.trim() && !file) || isSending"
                         class="bg-gray-800 text-white rounded p-1 hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                         type="button"
                     >

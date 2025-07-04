@@ -93,7 +93,9 @@ const isOwnMessage = (message) => {
                 :key="message.id"
                 class="flex items-start mb-4 group hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg p-2 -m-2"
             >
-                <div class="w-10 h-10 rounded bg-purple-400 mr-4 shrink-0"></div>
+                <div class="w-10 h-10 rounded bg-purple-400 mr-4 shrink-0">
+                    <img :src="message.user.avatar" alt="avatar" class="w-8 h-8 rounded-full" />
+                </div>
                 <div class="flex-1">
                     <div class="flex items-center justify-between">
                         <p class="font-bold text-gray-900 dark:text-gray-100">
@@ -121,7 +123,19 @@ const isOwnMessage = (message) => {
                             </button>
                         </div>
                     </div>
-                    <p class="text-gray-800 dark:text-gray-200">{{ message.content }}</p>
+                    <div class="mt-1">
+                        <span v-if="message.content">{{ message.content }}</span>
+                    </div>
+                    <!-- ファイル添付表示 -->
+                    <div v-if="message.file_path" class="mt-2">
+                        <img v-if="message.file_mime && message.file_mime.startsWith('image/')" :src="`/storage/${message.file_path}`" :alt="message.file_name" class="max-h-48 rounded border" />
+                        <div v-else>
+                            <a :href="`/storage/${message.file_path}`" :download="message.file_name" class="text-blue-600 underline" target="_blank">
+                                {{ message.file_name }}
+                            </a>
+                            <span class="text-xs text-gray-400 ml-2">({{ (message.file_size / 1024).toFixed(1) }} KB)</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

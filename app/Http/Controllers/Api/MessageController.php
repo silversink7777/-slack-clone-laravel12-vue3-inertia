@@ -72,10 +72,11 @@ class MessageController extends Controller
     {
         try {
             Log::info('Message creation request received', ['data' => $request->all()]);
-            
+
             $validated = $request->validate([
-                'content' => 'required|string|max:1000',
+                'content' => 'nullable|string|max:1000',
                 'channel_id' => 'required|exists:tbl_channels,id',
+                'file' => 'nullable|file|max:5120|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx',
             ]);
 
             // ユーザーがチャンネルのメンバーかどうかをチェック
@@ -83,18 +84,35 @@ class MessageController extends Controller
                 return response()->json(['error' => 'Unauthorized access to channel'], 403);
             }
 
-            Log::info('Validation passed', ['validated' => $validated]);
+            $fileData = [
+                'file_path' => null,
+                'file_name' => null,
+                'file_mime' => null,
+                'file_size' => null,
+            ];
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                $path = $file->store('messages', 'public');
+                $fileData = [
+                    'file_path' => $path,
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_mime' => $file->getClientMimeType(),
+                    'file_size' => $file->getSize(),
+                ];
+            }
+
+            if (empty($validated['content']) && !$request->hasFile('file')) {
+                return response()->json(['error' => 'メッセージまたはファイルが必要です'], 422);
+            }
 
             $message = $this->messageRepository->create([
-                'content' => $validated['content'],
+                'content' => $validated['content'] ?? '',
                 'channel_id' => $validated['channel_id'],
                 'user_id' => auth()->id(),
+                ...$fileData,
             ]);
 
-            // ユーザー情報を含めて返却
             $message->load('user');
-
-            Log::info('Message created successfully', ['message_id' => $message->id, 'message' => $message->toArray()]);
 
             return response()->json([
                 'id' => $message->id,
@@ -105,6 +123,10 @@ class MessageController extends Controller
                     'name' => $message->user->name,
                     'avatar' => $message->user->profile_photo_url,
                 ],
+                'file_path' => $message->file_path,
+                'file_name' => $message->file_name,
+                'file_mime' => $message->file_mime,
+                'file_size' => $message->file_size,
                 'time' => $message->created_at->format('g:i A'),
                 'created_at' => $message->created_at,
             ], 201);
@@ -114,7 +136,6 @@ class MessageController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'request_data' => $request->all()
             ]);
-            
             return response()->json([
                 'error' => 'Message creation failed',
                 'message' => $e->getMessage()
