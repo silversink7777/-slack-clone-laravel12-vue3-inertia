@@ -6,7 +6,6 @@ use App\Models\Channel;
 use App\Models\Message;
 use App\Repositories\Interfaces\ChannelRepositoryInterface;
 use App\Repositories\Interfaces\MessageRepositoryInterface;
-use App\Repositories\Interfaces\DirectMessageRepositoryInterface;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,16 +15,13 @@ class DashboardController extends Controller
 {
     protected $channelRepository;
     protected $messageRepository;
-    protected $directMessageRepository;
 
     public function __construct(
         ChannelRepositoryInterface $channelRepository,
-        MessageRepositoryInterface $messageRepository,
-        DirectMessageRepositoryInterface $directMessageRepository
+        MessageRepositoryInterface $messageRepository
     ) {
         $this->channelRepository = $channelRepository;
         $this->messageRepository = $messageRepository;
-        $this->directMessageRepository = $directMessageRepository;
     }
 
     public function __invoke(Request $request): Response
@@ -51,15 +47,11 @@ class DashboardController extends Controller
             'channels' => $channels->toArray(),
         ]);
 
-        // ダイレクトメッセージパートナーを取得
-        $directMessagePartners = $this->directMessageRepository->getPartners(auth()->id());
-
         return Inertia::render('Dashboard', [
             'channels' => $channels->map(fn ($channel) => [
                 'id' => $channel->id,
                 'name' => $channel->name,
             ]),
-            'direct-messages' => $directMessagePartners,
             'messages' => $messages,
         ]);
     }
@@ -91,16 +83,12 @@ class DashboardController extends Controller
             'selected_message_id' => $selectedMessageId,
         ]);
 
-        // ダイレクトメッセージパートナーを取得
-        $directMessagePartners = $this->directMessageRepository->getPartners(auth()->id());
-
         return Inertia::render('Dashboard', [
             'channels' => $channels->map(fn ($channel) => [
                 'id' => $channel->id,
                 'name' => $channel->name,
                 'active' => $selectedChannelId && $channel->id == $selectedChannelId,
             ]),
-            'direct-messages' => $directMessagePartners,
             'messages' => $messages,
             'selectedChannelId' => $selectedChannelId,
             'selectedMessageId' => $selectedMessageId,

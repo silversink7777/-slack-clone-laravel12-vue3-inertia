@@ -7,7 +7,6 @@ import ThemeToggle from '@/Components/ThemeToggle.vue';
 
 defineProps({
     activeChannel: Object,
-    activeDirectMessage: Object,
 });
 
 const page = usePage();
@@ -123,9 +122,7 @@ onUnmounted(() => {
     <div class="h-16 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between px-6">
         <div>
             <button class="flex items-center font-bold text-gray-900 dark:text-gray-100">
-                <span v-if="activeChannel">{{ activeChannel.name }}</span>
-                <span v-else-if="activeDirectMessage">{{ activeDirectMessage.name }}</span>
-                <span v-else>チャンネルまたはダイレクトメッセージを選択してください</span>
+                <span>{{ activeChannel?.name }}</span>
                 <ChevronDownIcon class="h-5 w-5 ml-1" />
             </button>
         </div>

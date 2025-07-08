@@ -6,7 +6,6 @@ import axios from 'axios';
 const props = defineProps({
     show: Boolean,
     message: Object,
-    activeDirectMessage: Object,
 });
 
 const emit = defineEmits(['close', 'messageUpdated']);
@@ -32,18 +31,9 @@ const handleUpdate = async () => {
     errorMessage.value = '';
 
     try {
-        let response;
-        if (props.activeDirectMessage) {
-            // DMメッセージの場合
-            response = await axios.put(`/api/direct-messages/${props.message.id}`, {
-                content: editContent.value.trim(),
-            });
-        } else {
-            // チャンネルメッセージの場合
-            response = await axios.put(`/messages/${props.message.id}`, {
-                content: editContent.value.trim(),
-            });
-        }
+        const response = await axios.put(`/messages/${props.message.id}`, {
+            content: editContent.value.trim(),
+        });
 
         emit('messageUpdated', response.data);
         emit('close');
