@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\UserOnlineStatusController;
 use App\Http\Controllers\Api\ChannelInvitationController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\DirectMessageController;
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\UserManagementController as AdminUserManagementController;
 use App\Http\Controllers\Admin\ChannelManagementController;
@@ -63,6 +64,18 @@ Route::middleware([
     Route::delete('/messages/{id}', [MessageController::class, 'destroy'])->name('messages.destroy');
     Route::patch('/messages/{id}/restore', [MessageController::class, 'restore'])->name('messages.restore');
     
+    // ダイレクトメッセージ関連
+    Route::get('/direct-messages', function () {
+        return Inertia::render('DirectMessages', [
+            'channels' => auth()->user()->channels,
+            'direct-messages' => [],
+            'messages' => [],
+        ]);
+    })->name('direct-messages.index');
+    Route::post('/direct-messages/start', [DirectMessageController::class, 'startConversation'])->name('direct-messages.start');
+    Route::post('/direct-messages', [DirectMessageController::class, 'store'])->name('direct-messages.store');
+    Route::get('/direct-messages/conversation', [DirectMessageController::class, 'getConversation'])->name('direct-messages.conversation');
+    
     // オンライン状態API
     Route::get('/user-online-status', [UserOnlineStatusController::class, 'index'])->name('user-online-status.index');
     Route::post('/user-online-status', [UserOnlineStatusController::class, 'update'])->name('user-online-status.update');
@@ -77,13 +90,32 @@ Route::middleware([
     
     // ユーザーAPI
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/users/search', [UserController::class, 'search'])->name('users.search');
     Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
 
     Route::get('/channels/search', [ChannelController::class, 'search'])->name('channels.search');
     Route::get('/messages/search', [MessageController::class, 'search'])->name('messages.search');
 
     Route::get('/theme', [ThemeController::class, 'getTheme'])->name('theme.get');
-    Route::post('/theme', [ThemeController::class, 'updateTheme'])->name('theme.update');
+Route::post('/theme', [ThemeController::class, 'updateTheme'])->name('theme.update');
+
+// テスト用ルート
+Route::post('/test/dm-start', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'Test endpoint working',
+        'auth_check' => auth()->check(),
+        'user_id' => auth()->id()
+    ]);
+});
+
+// より簡単なテスト用ルート
+Route::get('/test/simple', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'Simple test endpoint working'
+    ]);
+});
 });
 
 // Admin認証ルート
