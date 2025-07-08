@@ -51,9 +51,13 @@ onUnmounted(() => {
 <template>
     <div class="w-20 bg-slack-purple-darker dark:bg-gray-900 text-white p-2">
         <!-- Workspace Icon -->
-        <div class="rounded-lg bg-white text-purple-900 w-12 h-12 flex items-center justify-center text-2xl font-bold mb-4">
+        <button
+            @click="() => router.visit('/')"
+            class="rounded-lg bg-white text-purple-900 w-12 h-12 flex items-center justify-center text-2xl font-bold mb-4 hover:bg-gray-100 transition-colors cursor-pointer"
+            title="トップ画面に戻る"
+        >
             T
-        </div>
+        </button>
 
         <!-- 招待通知アイコン -->
         <button

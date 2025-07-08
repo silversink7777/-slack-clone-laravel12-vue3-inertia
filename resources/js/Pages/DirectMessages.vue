@@ -5,9 +5,20 @@
             <div class="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
                 <!-- ヘッダー -->
                 <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        ダイレクトメッセージ
-                    </h2>
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            ダイレクトメッセージ
+                        </h2>
+                        <a
+                            href="/"
+                            class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors"
+                            title="トップ画面に戻る"
+                        >
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                        </a>
+                    </div>
                 </div>
 
                 <!-- ユーザー検索 -->
@@ -88,11 +99,22 @@
                 <div v-if="activePartner" class="flex-1 flex flex-col">
                     <!-- パートナーヘッダー -->
                     <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                        <div class="flex items-center">
-                            <span class="h-3 w-3 rounded-full mr-3" :class="{'bg-green-500': activePartner.online, 'bg-gray-400': !activePartner.online}"></span>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                {{ activePartner.name }}
-                            </h3>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <span class="h-3 w-3 rounded-full mr-3" :class="{'bg-green-500': activePartner.online, 'bg-gray-400': !activePartner.online}"></span>
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                    {{ activePartner.name }}
+                                </h3>
+                            </div>
+                            <a
+                                href="/"
+                                class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors"
+                                title="トップ画面に戻る"
+                            >
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
+                            </a>
                         </div>
                     </div>
 
@@ -147,6 +169,17 @@
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                             ユーザーを検索してDMを開始するか、最近の会話を選択してください
                         </p>
+                        <div class="mt-4">
+                            <a
+                                href="/"
+                                class="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 transition-colors"
+                            >
+                                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
+                                トップ画面に戻る
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
