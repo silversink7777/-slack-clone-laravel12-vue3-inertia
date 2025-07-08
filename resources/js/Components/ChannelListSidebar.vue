@@ -1,8 +1,10 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { ChevronDownIcon, HashtagIcon, PlusIcon, UserPlusIcon, EllipsisVerticalIcon } from '@heroicons/vue/24/solid';
+import { router } from '@inertiajs/vue3';
+import { ChevronDownIcon, HashtagIcon, PlusIcon, UserPlusIcon, EllipsisVerticalIcon, ChatBubbleLeftRightIcon } from '@heroicons/vue/24/solid';
 import AddChannelModal from '@/Components/AddChannelModal.vue';
 import InviteUsersModal from '@/Components/InviteUsersModal.vue';
+
 import axios from 'axios';
 
 const props = defineProps({
@@ -15,10 +17,11 @@ const props = defineProps({
 const safeChannels = computed(() => props.channels || []);
 const safeDirectMessages = computed(() => props['direct-messages'] || []);
 
-const emit = defineEmits(['selectChannel', 'newChannelAdded', 'toggleManualOffline', 'channelDeleted', 'channelLeft']);
+const emit = defineEmits(['selectChannel', 'newChannelAdded', 'toggleManualOffline', 'channelDeleted', 'channelLeft', 'selectDirectMessage', 'directMessageStarted']);
 
 const showAddChannelModal = ref(false);
 const showInviteModal = ref(false);
+
 const selectedChannelForInvite = ref(0); // nullではなく0で初期化
 const channelMembers = ref({}); // チャンネルIDをキーとしたオブジェクトに変更
 
@@ -263,6 +266,14 @@ watch(safeChannels, (newChannels) => {
         filteredChannels.value = [...newChannels];
     }
 }, { immediate: true });
+
+const selectDirectMessage = (userId) => {
+    emit('selectDirectMessage', userId);
+};
+
+const handleDirectMessageStarted = (data) => {
+    emit('directMessageStarted', data);
+};
 </script>
 
 <template>
@@ -364,15 +375,25 @@ watch(safeChannels, (newChannels) => {
                 </div>
            </div>
            <div class="mb-4">
-                <h2 class="text-sm font-bold px-2 flex items-center">
-                    <ChevronDownIcon class="h-4 w-4 mr-1" />
-                    ダイレクトメッセージ ({{ safeDirectMessages.length }})
-                </h2>
+                <div class="flex items-center justify-between px-2">
+                    <h2 class="text-sm font-bold flex items-center">
+                        <ChevronDownIcon class="h-4 w-4 mr-1" />
+                        ダイレクトメッセージ ({{ safeDirectMessages.length }})
+                    </h2>
+                    <button 
+                        @click="() => router.visit('/direct-messages')" 
+                        class="text-slack-purple-light hover:text-white"
+                        title="新しいDMを開始"
+                    >
+                        <ChatBubbleLeftRightIcon class="h-4 w-4" />
+                    </button>
+                </div>
                 <ul>
                     <li
                         v-for="dm in safeDirectMessages"
                         :key="dm.id"
                         class="flex items-center rounded px-2 py-1 hover:bg-purple-600 cursor-pointer"
+                        @click="selectDirectMessage(dm.id)"
                     >
                         <span class="h-3 w-3 rounded-full mr-2" :class="{'bg-green-500': !!dm.online, 'bg-gray-400': !dm.online}"></span>
                         {{ dm.name }}
@@ -395,6 +416,8 @@ watch(safeChannels, (newChannels) => {
             @close="showInviteModal = false"
             @invitations-sent="handleInvitationSent"
         />
+
+
 
         <!-- チャンネルメニュードロップダウン -->
         <div 

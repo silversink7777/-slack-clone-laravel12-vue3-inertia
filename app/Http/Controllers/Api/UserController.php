@@ -4,67 +4,64 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Repositories\Interfaces\UserRepositoryInterface;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Http\JsonResponse;
 
 class UserController extends Controller
 {
-    protected $userRepository;
-
-    public function __construct(UserRepositoryInterface $userRepository)
+    /**
+     * ユーザーを検索
+     */
+    public function search(Request $request): JsonResponse
     {
-        $this->userRepository = $userRepository;
+        $query = $request->get('q', '');
+        $currentUserId = auth()->id();
+
+        if (empty($query)) {
+            return response()->json(['users' => []]);
+        }
+
+        $users = User::where('name', 'like', "%{$query}%")
+            ->where('id', '!=', $currentUserId) // 自分を除外
+            ->with(['onlineStatus'])
+            ->limit(10)
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'online' => $user->onlineStatus?->online ?? false,
+                ];
+            });
+
+        return response()->json(['users' => $users]);
     }
 
     /**
-     * ユーザー一覧を取得
+     * 全ユーザー一覧を取得（DM開始用）
      */
     public function index(Request $request): JsonResponse
     {
-        try {
-            $filters = [];
-            if ($request->has('search')) {
-                $filters['search'] = $request->get('search');
-            }
+        $currentUserId = auth()->id();
+        $search = $request->get('search', '');
 
-            $perPage = $request->get('per_page', 20);
-            $users = $this->userRepository->getPaginated($filters, $perPage);
+        $query = User::where('id', '!=', $currentUserId); // 自分を除外
 
-            return response()->json($users);
-
-        } catch (\Exception $e) {
-            Log::error('Failed to get users', ['error' => $e->getMessage()]);
-            
-            return response()->json([
-                'error' => 'Failed to get users',
-                'message' => $e->getMessage()
-            ], 500);
+        if (!empty($search)) {
+            $query->where('name', 'like', "%{$search}%");
         }
-    }
 
-    /**
-     * 特定のユーザー情報を取得
-     */
-    public function show(string $id): JsonResponse
-    {
-        try {
-            $user = $this->userRepository->findByIdWithSelect((int)$id, ['id', 'name', 'email']);
+        $users = $query->with(['onlineStatus'])
+            ->orderBy('name')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'online' => $user->onlineStatus?->online ?? false,
+                ];
+            });
 
-            if (!$user) {
-                return response()->json(['error' => 'User not found'], 404);
-            }
-
-            return response()->json($user);
-
-        } catch (\Exception $e) {
-            Log::error('Failed to get user', ['error' => $e->getMessage(), 'id' => $id]);
-            
-            return response()->json([
-                'error' => 'Failed to get user',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json(['users' => $users]);
     }
 } 
