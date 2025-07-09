@@ -102,7 +102,7 @@
             <!-- 右側：メッセージ表示エリア -->
             <div class="flex-1 flex flex-col h-full bg-gray-100 dark:bg-gray-900 min-h-0">
                 <!-- メッセージ表示エリア -->
-                <div v-if="activePartner" class="flex-1 flex flex-col bg-gray-100">
+                <div v-if="activePartner" class="flex-1 flex flex-col bg-gray-100 dark:bg-gray-900">
                     <!-- パートナーヘッダー -->
                     <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                         <div class="flex items-center justify-between">
@@ -318,8 +318,23 @@ const selectPartner = async (partner) => {
             headers: headers
         });
         messages.value = response.data;
+
+        // 未読メッセージを全て既読化
+        const unreadMessageIds = Array.isArray(messages.value)
+            ? messages.value.filter(m => !m.read_at && m.sender_id !== currentUserId.value).map(m => m.id)
+            : [];
+        for (const messageId of unreadMessageIds) {
+            try {
+                await axios.post(`/api/direct-messages/${messageId}/mark-read`, {}, { headers });
+            } catch (e) {
+                // 個別失敗は無視
+                console.error('Failed to mark message as read:', messageId, e);
+            }
+        }
+        // 未読数バッジ即時更新用イベント発火
+        window.dispatchEvent(new Event('unread-dm-count-updated'));
     } catch (error) {
-        console.error('Failed to fetch conversation:', error);
+        console.error('Failed to fetch conversation or mark as read:', error);
         messages.value = [];
     }
 };
