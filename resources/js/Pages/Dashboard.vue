@@ -6,6 +6,7 @@ import axios from 'axios';
 const props = defineProps({
     channels: Array,
     messages: Array,
+    'direct-messages': Array,
 });
 
 // デバッグ情報を追加
@@ -28,13 +29,60 @@ console.log('Initial channels ref:', channels.value);
 console.log('Initial messages ref:', messages.value);
 console.log('Active channel:', activeChannel.value);
 
-const directMessages = ref([]);
+const directMessages = ref(props['direct-messages'] || []);
+const activeDirectMessage = ref(null);
+const directMessagesContent = ref([]);
+
+// DMリストのデバッグ情報
+console.log('Direct messages prop:', props['direct-messages']);
+console.log('Direct messages ref:', directMessages.value);
+
+const handleSelectDirectMessage = async (userId) => {
+    console.log('=== handleSelectDirectMessage called ===');
+    console.log('Selected user ID:', userId);
+    console.log('Current directMessages:', directMessages.value);
+    
+    // チャンネルのアクティブ状態をリセット
+    channels.value = channels.value.map(c => ({ ...c, active: false }));
+    activeChannel.value = null;
+    
+    activeDirectMessage.value = directMessages.value.find(dm => dm.id === userId) || null;
+    console.log('Found activeDirectMessage:', activeDirectMessage.value);
+    
+    if (!activeDirectMessage.value) {
+        console.error('Direct message partner not found for user ID:', userId);
+        return;
+    }
+    
+    try {
+        console.log('Fetching conversation for partner ID:', userId);
+        // CSRFトークンを取得
+        const token = document.head.querySelector('meta[name="csrf-token"]');
+        const headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        };
+        if (token) {
+            headers['X-CSRF-TOKEN'] = token.content;
+        }
+
+        const response = await axios.get(`/direct-messages/conversation?partner_id=${userId}`, {
+            headers: headers
+        });
+        console.log('Conversation response:', response.data);
+        directMessagesContent.value = response.data;
+    } catch (error) {
+        console.error('Failed to fetch direct messages:', error);
+        directMessagesContent.value = [];
+    }
+};
+
 let onlineStatusInterval = null;
 const manualOffline = ref(false);
 
 // 初期化時にデフォルト値を設定
 const initializeDirectMessages = () => {
-    directMessages.value = [];
+    directMessages.value = props['direct-messages'] || [];
 };
 
 const setManualOffline = (value) => {
@@ -60,23 +108,27 @@ const fetchOnlineStatus = async () => {
         
         if (response.data && Array.isArray(response.data)) {
             console.log('Processing online status data...');
-            directMessages.value = response.data.map(status => {
-                console.log('Processing status:', status);
-                return {
-                    id: status.user_id,
-                    name: status.user?.name || 'Unknown',
-                    online: !!(status.online === true || status.online === 1 || status.online === '1'),
-                    active: false,
-                };
-            });
+            // 既存のDMリストを保持しつつ、オンライン状態を更新
+            const onlineUsers = response.data.map(status => ({
+                id: status.user_id,
+                name: status.user?.name || 'Unknown',
+                online: !!(status.online === true || status.online === 1 || status.online === '1'),
+                active: false,
+            }));
+            
+            // 既存のDMリストとオンラインユーザーをマージ
+            const existingDMs = directMessages.value.filter(dm => 
+                !onlineUsers.some(online => online.id === dm.id)
+            );
+            directMessages.value = [...existingDMs, ...onlineUsers];
             console.log('Final directMessages:', directMessages.value);
         } else {
             console.warn('Invalid response format from API');
-            directMessages.value = [];
+            // DMリストは保持
         }
     } catch (error) {
         console.error('Failed to fetch user online status:', error);
-        directMessages.value = [];
+        // DMリストは保持
     }
 };
 
@@ -101,8 +153,9 @@ onMounted(async () => {
     messages.value = props.messages || [];
     activeChannel.value = channels.value.find(c => c.active);
     
-    // DMリストを初期化
-    initializeDirectMessages();
+    // DMリストを初期化（propsから取得）
+    directMessages.value = props['direct-messages'] || [];
+    console.log('Initial directMessages from props:', directMessages.value);
     
     console.log('Mounted channels:', channels.value);
     console.log('Mounted messages:', messages.value);
@@ -134,11 +187,12 @@ onMounted(async () => {
         }
     }
 
+    // オンライン状態の更新（DMリストは保持）
     try {
         await fetchOnlineStatus();
     } catch (error) {
         console.error('Initial fetchOnlineStatus failed:', error);
-        directMessages.value = [];
+        // DMリストは保持
     }
     startOnlineInterval();
 });
@@ -148,6 +202,10 @@ onUnmounted(() => {
 });
 
 const handleSelectChannel = async (channelId) => {
+    // DMをリセット
+    activeDirectMessage.value = null;
+    directMessagesContent.value = [];
+    
     // チャンネルのアクティブ状態を更新
     channels.value = channels.value.map(c => ({
         ...c,
@@ -209,21 +267,41 @@ const handleNewChannelAdded = async (newChannel) => {
 };
 
 const handleMessageSent = (newMessage) => {
-    // メッセージリストに新しいメッセージを追加
-    messages.value.unshift(newMessage);
+    if (activeChannel.value) {
+        // チャンネルメッセージの場合
+        messages.value.unshift(newMessage);
+    } else if (activeDirectMessage.value) {
+        // DMメッセージの場合
+        directMessagesContent.value.unshift(newMessage);
+    }
 };
 
 const handleMessageUpdated = (updatedMessage) => {
-    // メッセージリストを更新
-    const index = messages.value.findIndex(msg => msg.id === updatedMessage.id);
-    if (index !== -1) {
-        messages.value[index] = updatedMessage;
+    if (activeChannel.value) {
+        // チャンネルメッセージの場合
+        const index = messages.value.findIndex(msg => msg.id === updatedMessage.id);
+        if (index !== -1) {
+            messages.value[index] = updatedMessage;
+        }
+    } else if (activeDirectMessage.value) {
+        // DMメッセージの場合
+        const index = directMessagesContent.value.findIndex(msg => msg.id === updatedMessage.id);
+        if (index !== -1) {
+            directMessagesContent.value[index] = updatedMessage;
+        }
     }
 };
 
 const handleMessageDeleted = (deletedId) => {
-    const idx = messages.value.findIndex(msg => msg.id === deletedId);
-    if (idx !== -1) messages.value.splice(idx, 1);
+    if (activeChannel.value) {
+        // チャンネルメッセージの場合
+        const idx = messages.value.findIndex(msg => msg.id === deletedId);
+        if (idx !== -1) messages.value.splice(idx, 1);
+    } else if (activeDirectMessage.value) {
+        // DMメッセージの場合
+        const idx = directMessagesContent.value.findIndex(msg => msg.id === deletedId);
+        if (idx !== -1) directMessagesContent.value.splice(idx, 1);
+    }
 };
 
 // チャンネル削除時の処理
@@ -261,6 +339,28 @@ const handleChannelLeft = async (channelId) => {
         }
     }
 };
+
+// DM開始時の処理
+const handleDirectMessageStarted = async (data) => {
+    console.log('Direct message started:', data);
+    
+    // DMリストを更新
+    const newPartner = {
+        id: data.partner.id,
+        name: data.partner.name,
+        online: data.partner.online,
+        active: false,
+    };
+    
+    // 既存のDMリストに追加（重複を避ける）
+    const existingIndex = directMessages.value.findIndex(dm => dm.id === newPartner.id);
+    if (existingIndex === -1) {
+        directMessages.value.push(newPartner);
+    }
+    
+    // 新しいDMをアクティブにする
+    await handleSelectDirectMessage(newPartner.id);
+};
 </script>
 
 <template>
@@ -268,8 +368,9 @@ const handleChannelLeft = async (channelId) => {
         title="Dashboard"
         :channels="channels"
         :direct-messages="directMessages"
-        :messages="messages"
+        :messages="activeChannel ? messages : directMessagesContent"
         :active-channel="activeChannel"
+        :active-direct-message="activeDirectMessage"
         :manual-offline="manualOffline"
         @toggle-manual-offline="setManualOffline"
         @select-channel="handleSelectChannel"
@@ -279,6 +380,8 @@ const handleChannelLeft = async (channelId) => {
         @message-deleted="handleMessageDeleted"
         @channel-deleted="handleChannelDeleted"
         @channel-left="handleChannelLeft"
+        @select-direct-message="handleSelectDirectMessage"
+        @direct-message-started="handleDirectMessageStarted"
     >
     </AppLayout>
 </template>

@@ -12,6 +12,7 @@ import axios from 'axios';
 
 const props = defineProps({
     activeChannel: Object,
+    activeDirectMessage: Object,
 });
 
 const emit = defineEmits(['messageSent']);
@@ -64,14 +65,19 @@ const clearFile = () => {
 };
 
 const sendMessage = async () => {
-    if ((!messageContent.value.trim() && !file) || !props.activeChannel) {
+    if ((!messageContent.value.trim() && !file) || (!props.activeChannel && !props.activeDirectMessage)) {
         return;
     }
     isSending.value = true;
     try {
         const formData = new FormData();
         formData.append('content', messageContent.value.trim());
-        formData.append('channel_id', props.activeChannel.id);
+        if (props.activeChannel) {
+            formData.append('channel_id', props.activeChannel.id);
+        }
+        if (props.activeDirectMessage) {
+            formData.append('receiver_id', props.activeDirectMessage.id);
+        }
         if (file.value) {
             formData.append('file', file.value);
         }
@@ -79,7 +85,12 @@ const sendMessage = async () => {
         const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.content;
         const headers = { 'Content-Type': 'multipart/form-data' };
         if (csrfToken) headers['X-CSRF-TOKEN'] = csrfToken;
-        const response = await axios.post('/messages', formData, { headers });
+        let response;
+        if (props.activeDirectMessage) {
+            response = await axios.post('/api/direct-messages', formData, { headers });
+        } else {
+            response = await axios.post('/messages', formData, { headers });
+        }
         emit('messageSent', response.data);
         messageContent.value = '';
         clearFile();

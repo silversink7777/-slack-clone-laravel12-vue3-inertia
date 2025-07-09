@@ -6,6 +6,7 @@ import axios from 'axios';
 const props = defineProps({
     show: Boolean,
     message: Object,
+    activeDirectMessage: Object,
 });
 
 const emit = defineEmits(['close', 'messageDeleted']);
@@ -17,7 +18,13 @@ const handleDelete = async () => {
     isDeleting.value = true;
     errorMessage.value = '';
     try {
-        await axios.delete(`/messages/${props.message.id}`);
+        if (props.activeDirectMessage) {
+            // DMメッセージの場合
+            await axios.delete(`/api/direct-messages/${props.message.id}`);
+        } else {
+            // チャンネルメッセージの場合
+            await axios.delete(`/messages/${props.message.id}`);
+        }
         emit('messageDeleted', props.message.id);
         emit('close');
     } catch (error) {

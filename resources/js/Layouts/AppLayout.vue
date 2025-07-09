@@ -13,7 +13,7 @@ defineProps({
     manualOffline: Boolean,
 });
 
-const emit = defineEmits(['selectChannel', 'newChannelAdded', 'messageSent', 'messageUpdated', 'messageDeleted', 'toggleManualOffline', 'channelDeleted', 'channelLeft']);
+const emit = defineEmits(['selectChannel', 'newChannelAdded', 'messageSent', 'messageUpdated', 'messageDeleted', 'toggleManualOffline', 'channelDeleted', 'channelLeft', 'selectDirectMessage', 'directMessageStarted']);
 </script>
 
 <template>
@@ -31,6 +31,8 @@ const emit = defineEmits(['selectChannel', 'newChannelAdded', 'messageSent', 'me
                 @new-channel-added="channel => emit('newChannelAdded', channel)"
                 @channel-deleted="id => emit('channelDeleted', id)"
                 @channel-left="id => emit('channelLeft', id)"
+                @select-direct-message="id => emit('selectDirectMessage', id)"
+                @direct-message-started="data => emit('directMessageStarted', data)"
             />
             <div class="flex-1 flex flex-col">
                 <!-- 招待通知エリア -->
@@ -39,6 +41,7 @@ const emit = defineEmits(['selectChannel', 'newChannelAdded', 'messageSent', 'me
                 <!-- メインコンテンツ -->
                 <slot />
                 <MainContent 
+                    v-if="messages && messages.length > 0"
                     :messages="messages" 
                     :active-channel="activeChannel"
                     @message-sent="message => emit('messageSent', message)"
