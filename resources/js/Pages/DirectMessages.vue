@@ -1,8 +1,8 @@
 <template>
     <DirectMessagesLayout title="ダイレクトメッセージ">
-        <div class="flex h-full">
+        <div class="flex h-screen bg-gray-100 dark:bg-gray-900">
             <!-- 左サイドバー：ユーザー検索・DMパートナー一覧 -->
-            <div class="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+            <div class="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
                 <!-- ヘッダー -->
                 <div class="p-4 border-b border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between">
@@ -100,9 +100,9 @@
             </div>
 
             <!-- 右側：メッセージ表示エリア -->
-            <div class="flex-1 flex flex-col">
+            <div class="flex-1 flex flex-col h-full bg-gray-100 dark:bg-gray-900 min-h-0">
                 <!-- メッセージ表示エリア -->
-                <div v-if="activePartner" class="flex-1 flex flex-col">
+                <div v-if="activePartner" class="flex-1 flex flex-col bg-gray-100">
                     <!-- パートナーヘッダー -->
                     <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                         <div class="flex items-center justify-between">
@@ -128,7 +128,7 @@
                     </div>
 
                     <!-- メッセージリスト -->
-                    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <div class="flex-1 overflow-y-auto p-4 space-y-4 h-full min-h-0">
                         <div
                             v-for="message in messages"
                             :key="message.id"
