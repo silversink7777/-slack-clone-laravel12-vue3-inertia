@@ -82,6 +82,7 @@ class DirectMessageRepository implements DirectMessageRepositoryInterface
             return [
                 'id' => $user->id,
                 'name' => $user->name,
+                'email' => $user->email,
                 'online' => $user->onlineStatus?->online ?? false,
                 'unread_count' => $unreadCount,
                 'last_message' => $lastMessage ? [

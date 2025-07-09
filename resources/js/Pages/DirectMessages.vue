@@ -28,7 +28,7 @@
                             v-model="searchQuery"
                             @input="onSearchInput"
                             type="text"
-                            placeholder="ユーザーを検索..."
+                            placeholder="ユーザー名またはメールアドレスで検索..."
                             class="w-full px-3 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
                         />
                         <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,7 +58,10 @@
                         >
                             <div class="flex items-center">
                                 <span class="h-3 w-3 rounded-full mr-3" :class="{'bg-green-500': user.online, 'bg-gray-400': !user.online}"></span>
-                                <span class="text-gray-900 dark:text-gray-100">{{ user.name }}</span>
+                                <div class="flex flex-col">
+                                    <span class="text-gray-900 dark:text-gray-100 font-medium">{{ user.name }}</span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ user.email }}</span>
+                                </div>
                             </div>
                             <button
                                 @click.stop="startDirectMessage(user)"
@@ -82,7 +85,10 @@
                             @click="selectPartner(partner)"
                         >
                             <span class="h-3 w-3 rounded-full mr-3" :class="{'bg-green-500': partner.online, 'bg-gray-400': !partner.online}"></span>
-                            <span class="text-gray-900 dark:text-gray-100">{{ partner.name }}</span>
+                            <div class="flex flex-col">
+                                <span class="text-gray-900 dark:text-gray-100 font-medium">{{ partner.name }}</span>
+                                <span v-if="partner.email" class="text-xs text-gray-500 dark:text-gray-400">{{ partner.email }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -102,9 +108,12 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
                                 <span class="h-3 w-3 rounded-full mr-3" :class="{'bg-green-500': activePartner.online, 'bg-gray-400': !activePartner.online}"></span>
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                    {{ activePartner.name }}
-                                </h3>
+                                <div class="flex flex-col">
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                        {{ activePartner.name }}
+                                    </h3>
+                                    <span v-if="activePartner.email" class="text-sm text-gray-500 dark:text-gray-400">{{ activePartner.email }}</span>
+                                </div>
                             </div>
                             <a
                                 href="/"
@@ -268,6 +277,7 @@ const startDirectMessage = async (user) => {
         const newPartner = {
             id: user.id,
             name: user.name,
+            email: user.email,
             online: user.online,
         };
 
@@ -373,6 +383,7 @@ const loadDirectMessagePartners = async () => {
         directMessagePartners.value = response.data.map(partner => ({
             id: partner.id,
             name: partner.name,
+            email: partner.email,
             online: partner.online || false,
         }));
     } catch (error) {

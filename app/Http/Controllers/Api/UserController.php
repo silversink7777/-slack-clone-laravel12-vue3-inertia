@@ -21,7 +21,10 @@ class UserController extends Controller
             return response()->json(['users' => []]);
         }
 
-        $users = User::where('name', 'like', "%{$query}%")
+        $users = User::where(function ($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                  ->orWhere('email', 'like', "%{$query}%");
+            })
             ->where('id', '!=', $currentUserId) // 自分を除外
             ->with(['onlineStatus'])
             ->limit(10)
@@ -30,6 +33,7 @@ class UserController extends Controller
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
+                    'email' => $user->email,
                     'online' => $user->onlineStatus?->online ?? false,
                 ];
             });
