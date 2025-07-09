@@ -5,6 +5,30 @@ import { router } from '@inertiajs/vue3';
 import InvitationLayout from '@/Layouts/InvitationLayout.vue';
 import InvitationNotification from '@/Components/InvitationNotification.vue';
 
+const dmUnreadCount = ref(0);
+const dmUnreadLoading = ref(false);
+const dmUnreadError = ref('');
+
+const fetchDmUnreadCount = async () => {
+    dmUnreadLoading.value = true;
+    dmUnreadError.value = '';
+    try {
+        const res = await fetch('/api/direct-messages/unread-count', {
+            headers: { 'Accept': 'application/json' }
+        });
+        const data = await res.json();
+        if (res.ok && typeof data.count === 'number') {
+            dmUnreadCount.value = data.count;
+        } else {
+            dmUnreadError.value = data.error || '未読DM件数の取得に失敗しました';
+        }
+    } catch (e) {
+        dmUnreadError.value = '未読DM件数の取得に失敗しました';
+    } finally {
+        dmUnreadLoading.value = false;
+    }
+};
+
 const props = defineProps({
     channels: {
         type: Array,
@@ -108,6 +132,7 @@ onMounted(() => {
             }, 500);
         }
     }
+    fetchDmUnreadCount();
 });
 </script>
 
@@ -125,7 +150,21 @@ onMounted(() => {
     <div class="w-full max-w-lg mx-auto pt-8">
       <h1 class="text-2xl font-bold text-gray-900 text-center">招待通知</h1>
       <p class="text-gray-600 mt-2 text-center">あなたが招待されたチャンネルの通知がここに表示されます。</p>
-      
+
+      <!-- DM通知アラート -->
+      <div v-if="dmUnreadCount > 0" class="mt-6 p-4 bg-purple-50 border border-purple-200 rounded-lg flex items-center justify-between">
+        <div class="flex items-center">
+          <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-600 mr-3">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8a9 9 0 100-18 9 9 0 000 18z" />
+            </svg>
+          </span>
+          <span class="text-purple-800 font-semibold">新着ダイレクトメッセージが{{ dmUnreadCount }}件あります</span>
+        </div>
+        <button @click="router.visit('/direct-messages')" class="ml-4 px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition-colors">DM画面へ</button>
+      </div>
+      <div v-if="dmUnreadError" class="mt-2 text-sm text-red-500">{{ dmUnreadError }}</div>
+
       <!-- 登録完了メッセージ -->
       <div v-if="showRegistrationSuccess" class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
         <div class="flex items-center">

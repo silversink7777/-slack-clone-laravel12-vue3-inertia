@@ -318,6 +318,11 @@ const selectPartner = async (partner) => {
             headers: headers
         });
         messages.value = response.data;
+        
+        // 既読反映イベントを発火（バックエンドの既読処理完了を待つ）
+        setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('dm-unread-count-updated'));
+        }, 2000);
     } catch (error) {
         console.error('Failed to fetch conversation:', error);
         messages.value = [];
@@ -403,5 +408,10 @@ onMounted(async () => {
 
     // DMパートナー一覧を読み込み
     await loadDirectMessagePartners();
+    
+    // 画面表示時にも未読バッジ即時消去イベントを発火（バックエンドの既読処理完了を待つ）
+    setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('dm-unread-count-updated'));
+    }, 2000);
 });
 </script> 
