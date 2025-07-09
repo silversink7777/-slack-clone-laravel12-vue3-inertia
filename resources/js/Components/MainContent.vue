@@ -17,6 +17,7 @@ const props = defineProps({
         default: () => []
     },
     activeChannel: Object,
+    activeDirectMessage: Object,
 });
 
 const emit = defineEmits(['messageSent', 'messageUpdated', 'messageDeleted']);
@@ -96,124 +97,232 @@ const isOwnMessage = (message) => {
 
 <template>
     <div class="flex-1 flex flex-col bg-white dark:bg-gray-900">
-        <MainHeader :active-channel="activeChannel" />
+        <MainHeader :active-channel="activeChannel" :active-direct-message="activeDirectMessage" />
 
         <!-- Messages Area -->
         <div class="flex-1 p-6 overflow-y-auto">
-            <!-- Messages will be displayed here -->
-            <div
-                v-for="message in localMessages"
-                :key="message.id"
-                class="flex items-start mb-4 group hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg p-2 -m-2"
-            >
-                <div class="w-10 h-10 rounded bg-purple-400 mr-4 shrink-0">
-                    <img :src="message.user.avatar" alt="avatar" class="w-8 h-8 rounded-full" />
-                </div>
-                <div class="flex-1">
-                    <div class="flex items-center justify-between">
-                        <p class="font-bold text-gray-900 dark:text-gray-100">
-                            {{ message.user.name }}
-                            <span class="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">{{ message.time }}</span>
-                        </p>
-                        <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                v-if="isOwnMessage(message)"
-                                @click="openEditModal(message)"
-                                class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded"
-                                title="メッセージを編集"
-                            >
-                                <PencilIcon class="h-4 w-4" />
-                            </button>
-                            <button
-                                v-if="isOwnMessage(message)"
-                                @click="openDeleteModal(message)"
-                                class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1 rounded"
-                                title="メッセージを削除"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+            <template v-if="activeChannel">
+                <!-- チャンネルメッセージ表示 -->
+                <div
+                    v-for="message in localMessages"
+                    :key="message.id"
+                    class="flex items-start mb-4 group hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg p-2 -m-2"
+                >
+                    <div class="w-10 h-10 rounded bg-purple-400 mr-4 shrink-0">
+                        <img :src="message.user.avatar" alt="avatar" class="w-8 h-8 rounded-full" />
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <p class="font-bold text-gray-900 dark:text-gray-100">
+                                {{ message.user.name }}
+                                <span class="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">{{ message.time }}</span>
+                            </p>
+                            <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    v-if="isOwnMessage(message)"
+                                    @click="openEditModal(message)"
+                                    class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded"
+                                    title="メッセージを編集"
+                                >
+                                    <PencilIcon class="h-4 w-4" />
+                                </button>
+                                <button
+                                    v-if="isOwnMessage(message)"
+                                    @click="openDeleteModal(message)"
+                                    class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1 rounded"
+                                    title="メッセージを削除"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-1">
+                            <span v-if="message.content">{{ message.content }}</span>
+                        </div>
+                        <!-- ファイル添付表示 -->
+                        <div v-if="message.file_path" class="mt-2">
+                            <img v-if="message.file_mime && message.file_mime.startsWith('image/')"
+                                 :src="`/storage/${message.file_path}`"
+                                 :alt="message.file_name"
+                                 class="max-h-48 rounded border cursor-pointer hover:opacity-80 transition"
+                                 @click="openPreview({
+                                     type: 'image',
+                                     src: `/storage/${message.file_path}`,
+                                     name: message.file_name,
+                                     mime: message.file_mime
+                                 })"
+                            />
+                            <video v-else-if="message.file_mime && message.file_mime.startsWith('video/')"
+                                   :src="`/storage/${message.file_path}`"
+                                   controls
+                                   class="max-h-48 rounded border cursor-pointer hover:opacity-80 transition"
+                                   @click="openPreview({
+                                       type: 'video',
+                                       src: `/storage/${message.file_path}`,
+                                       name: message.file_name,
+                                       mime: message.file_mime
+                                   })"
+                            />
+                            <audio v-else-if="message.file_mime && message.file_mime.startsWith('audio/')"
+                                   :src="`/storage/${message.file_path}`"
+                                   controls
+                                   class="w-full cursor-pointer hover:opacity-80 transition"
+                                   @click="openPreview({
+                                       type: 'audio',
+                                       src: `/storage/${message.file_path}`,
+                                       name: message.file_name,
+                                       mime: message.file_mime
+                                   })"
+                            />
+                            <iframe v-else-if="message.file_mime === 'application/pdf'"
+                                    :src="`/storage/${message.file_path}`"
+                                    class="w-full max-h-96 border rounded cursor-pointer hover:opacity-80 transition"
+                                    @click="openPreview({
+                                        type: 'pdf',
+                                        src: `/storage/${message.file_path}`,
+                                        name: message.file_name,
+                                        mime: message.file_mime
+                                    })"
+                            />
+                            <iframe v-else-if="['application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(message.file_mime)"
+                                    :src="`https://docs.google.com/gview?url=${location.origin}/storage/${message.file_path}&embedded=true`"
+                                    class="w-full max-h-96 border rounded cursor-pointer hover:opacity-80 transition"
+                                    @click="openPreview({
+                                        type: 'doc',
+                                        src: `https://docs.google.com/gview?url=${location.origin}/storage/${message.file_path}&embedded=true`,
+                                        name: message.file_name,
+                                        mime: message.file_mime
+                                    })"
+                            />
+                            <div v-else>
+                                <a :href="`/storage/${message.file_path}`" :download="message.file_name" class="text-blue-600 underline" target="_blank">
+                                    {{ message.file_name }}
+                                </a>
+                                <span class="text-xs text-gray-400 ml-2">({{ (message.file_size / 1024).toFixed(1) }} KB)</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="mt-1">
-                        <span v-if="message.content">{{ message.content }}</span>
+                </div>
+            </template>
+            <template v-else-if="activeDirectMessage">
+                <!-- DMメッセージ表示 -->
+                <div
+                    v-for="message in localMessages"
+                    :key="message.id"
+                    class="flex items-start mb-4 group hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg p-2 -m-2"
+                >
+                    <div class="w-10 h-10 rounded bg-purple-400 mr-4 shrink-0">
+                        <img :src="message.user.avatar" alt="avatar" class="w-8 h-8 rounded-full" />
                     </div>
-                    <!-- ファイル添付表示 -->
-                    <div v-if="message.file_path" class="mt-2">
-                        <img v-if="message.file_mime && message.file_mime.startsWith('image/')"
-                             :src="`/storage/${message.file_path}`"
-                             :alt="message.file_name"
-                             class="max-h-48 rounded border cursor-pointer hover:opacity-80 transition"
-                             @click="openPreview({
-                                 type: 'image',
-                                 src: `/storage/${message.file_path}`,
-                                 name: message.file_name,
-                                 mime: message.file_mime
-                             })"
-                        />
-                        <video v-else-if="message.file_mime && message.file_mime.startsWith('video/')"
-                               :src="`/storage/${message.file_path}`"
-                               controls
-                               class="max-h-48 rounded border cursor-pointer hover:opacity-80 transition"
-                               @click="openPreview({
-                                   type: 'video',
-                                   src: `/storage/${message.file_path}`,
-                                   name: message.file_name,
-                                   mime: message.file_mime
-                               })"
-                        />
-                        <audio v-else-if="message.file_mime && message.file_mime.startsWith('audio/')"
-                               :src="`/storage/${message.file_path}`"
-                               controls
-                               class="w-full cursor-pointer hover:opacity-80 transition"
-                               @click="openPreview({
-                                   type: 'audio',
-                                   src: `/storage/${message.file_path}`,
-                                   name: message.file_name,
-                                   mime: message.file_mime
-                               })"
-                        />
-                        <iframe v-else-if="message.file_mime === 'application/pdf'"
-                                :src="`/storage/${message.file_path}`"
-                                class="w-full max-h-96 border rounded cursor-pointer hover:opacity-80 transition"
-                                @click="openPreview({
-                                    type: 'pdf',
-                                    src: `/storage/${message.file_path}`,
-                                    name: message.file_name,
-                                    mime: message.file_mime
-                                })"
-                        />
-                        <iframe v-else-if="['application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(message.file_mime)"
-                                :src="`https://docs.google.com/gview?url=${location.origin}/storage/${message.file_path}&embedded=true`"
-                                class="w-full max-h-96 border rounded cursor-pointer hover:opacity-80 transition"
-                                @click="openPreview({
-                                    type: 'doc',
-                                    src: `https://docs.google.com/gview?url=${location.origin}/storage/${message.file_path}&embedded=true`,
-                                    name: message.file_name,
-                                    mime: message.file_mime
-                                })"
-                        />
-                        <div v-else>
-                            <a :href="`/storage/${message.file_path}`" :download="message.file_name" class="text-blue-600 underline" target="_blank">
-                                {{ message.file_name }}
-                            </a>
-                            <span class="text-xs text-gray-400 ml-2">({{ (message.file_size / 1024).toFixed(1) }} KB)</span>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <p class="font-bold text-gray-900 dark:text-gray-100">
+                                {{ message.user.name }}
+                                <span class="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">{{ message.time }}</span>
+                            </p>
+                            <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    v-if="isOwnMessage(message)"
+                                    @click="openEditModal(message)"
+                                    class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded"
+                                    title="メッセージを編集"
+                                >
+                                    <PencilIcon class="h-4 w-4" />
+                                </button>
+                                <button
+                                    v-if="isOwnMessage(message)"
+                                    @click="openDeleteModal(message)"
+                                    class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-1 rounded"
+                                    title="メッセージを削除"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-1">
+                            <span v-if="message.content">{{ message.content }}</span>
+                        </div>
+                        <!-- ファイル添付表示 -->
+                        <div v-if="message.file_path" class="mt-2">
+                            <img v-if="message.file_mime && message.file_mime.startsWith('image/')"
+                                 :src="`/storage/${message.file_path}`"
+                                 :alt="message.file_name"
+                                 class="max-h-48 rounded border cursor-pointer hover:opacity-80 transition"
+                                 @click="openPreview({
+                                     type: 'image',
+                                     src: `/storage/${message.file_path}`,
+                                     name: message.file_name,
+                                     mime: message.file_mime
+                                 })"
+                            />
+                            <video v-else-if="message.file_mime && message.file_mime.startsWith('video/')"
+                                   :src="`/storage/${message.file_path}`"
+                                   controls
+                                   class="max-h-48 rounded border cursor-pointer hover:opacity-80 transition"
+                                   @click="openPreview({
+                                       type: 'video',
+                                       src: `/storage/${message.file_path}`,
+                                       name: message.file_name,
+                                       mime: message.file_mime
+                                   })"
+                            />
+                            <audio v-else-if="message.file_mime && message.file_mime.startsWith('audio/')"
+                                   :src="`/storage/${message.file_path}`"
+                                   controls
+                                   class="w-full cursor-pointer hover:opacity-80 transition"
+                                   @click="openPreview({
+                                       type: 'audio',
+                                       src: `/storage/${message.file_path}`,
+                                       name: message.file_name,
+                                       mime: message.file_mime
+                                   })"
+                            />
+                            <iframe v-else-if="message.file_mime === 'application/pdf'"
+                                    :src="`/storage/${message.file_path}`"
+                                    class="w-full max-h-96 border rounded cursor-pointer hover:opacity-80 transition"
+                                    @click="openPreview({
+                                        type: 'pdf',
+                                        src: `/storage/${message.file_path}`,
+                                        name: message.file_name,
+                                        mime: message.file_mime
+                                    })"
+                            />
+                            <iframe v-else-if="['application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(message.file_mime)"
+                                    :src="`https://docs.google.com/gview?url=${location.origin}/storage/${message.file_path}&embedded=true`"
+                                    class="w-full max-h-96 border rounded cursor-pointer hover:opacity-80 transition"
+                                    @click="openPreview({
+                                        type: 'doc',
+                                        src: `https://docs.google.com/gview?url=${location.origin}/storage/${message.file_path}&embedded=true`,
+                                        name: message.file_name,
+                                        mime: message.file_mime
+                                    })"
+                            />
+                            <div v-else>
+                                <a :href="`/storage/${message.file_path}`" :download="message.file_name" class="text-blue-600 underline" target="_blank">
+                                    {{ message.file_name }}
+                                </a>
+                                <span class="text-xs text-gray-400 ml-2">({{ (message.file_size / 1024).toFixed(1) }} KB)</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </template>
+            <template v-else>
+                <div class="text-center text-gray-400 mt-10">チャンネルまたはダイレクトメッセージを選択してください</div>
+            </template>
         </div>
 
-        <MessageInput 
-            :active-channel="activeChannel"
-            @message-sent="handleMessageSent"
-        />
+        <MessageInput v-if="activeChannel || activeDirectMessage" :active-channel="activeChannel" :active-direct-message="activeDirectMessage" @message-sent="handleMessageSent" />
 
         <!-- Message Edit Modal -->
         <MessageEditModal
             :show="showEditModal"
             :message="editingMessage"
+            :active-direct-message="activeDirectMessage"
             @close="closeEditModal"
             @message-updated="handleMessageUpdated"
         />
@@ -222,6 +331,7 @@ const isOwnMessage = (message) => {
         <MessageDeleteModal
             :show="showDeleteModal"
             :message="deletingMessage"
+            :active-direct-message="activeDirectMessage"
             @close="closeDeleteModal"
             @message-deleted="handleMessageDeleted"
         />

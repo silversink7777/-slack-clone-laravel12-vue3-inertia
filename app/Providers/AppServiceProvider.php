@@ -16,6 +16,8 @@ use App\Repositories\Interfaces\UserRepositoryInterface;
 use App\Repositories\UserRepository;
 use App\Repositories\Interfaces\UserOnlineStatusRepositoryInterface;
 use App\Repositories\UserOnlineStatusRepository;
+use App\Repositories\Interfaces\DirectMessageRepositoryInterface;
+use App\Repositories\DirectMessageRepository;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MessageRepositoryInterface::class, MessageRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->bind(UserOnlineStatusRepositoryInterface::class, UserOnlineStatusRepository::class);
+        $this->app->bind(DirectMessageRepositoryInterface::class, DirectMessageRepository::class);
     }
 
     /**
