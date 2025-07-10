@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\UserOnlineStatusController;
 use App\Http\Controllers\Api\ChannelController;
 use App\Http\Controllers\Api\DirectMessageController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\Api\PinnedMessageController;
 
 Route::middleware(['auth:sanctum', 'web'])->group(function() {
     Route::get('/user', function (Request $request) {
@@ -32,6 +34,21 @@ Route::middleware(['auth:sanctum', 'web'])->group(function() {
     Route::delete('/direct-messages/{id}', [DirectMessageController::class, 'destroy']);
     Route::get('/direct-messages/unread-count', [DirectMessageController::class, 'getUnreadCount']);
     Route::post('/direct-messages/{id}/mark-read', [DirectMessageController::class, 'markAsRead']);
+
+    // メッセージ関連のルート
+    Route::get('/messages', [MessageController::class, 'index']);
+    Route::post('/messages', [MessageController::class, 'store']);
+    Route::put('/messages/{id}', [MessageController::class, 'update']);
+    Route::delete('/messages/{id}', [MessageController::class, 'destroy']);
+    Route::post('/messages/{id}/restore', [MessageController::class, 'restore']);
+    Route::get('/messages/search', [MessageController::class, 'search']);
+
+    // ピン留めメッセージ関連のルート
+    Route::get('/pinned-messages', [PinnedMessageController::class, 'index']);
+    Route::post('/pinned-messages', [PinnedMessageController::class, 'store']);
+    Route::delete('/pinned-messages/{id}', [PinnedMessageController::class, 'destroy']);
+    Route::delete('/pinned-messages', [PinnedMessageController::class, 'destroyByMessageAndChannel']);
+    Route::get('/pinned-messages/check', [PinnedMessageController::class, 'check']);
 });
 
 // 認証状態確認用のルート（デバッグ用）

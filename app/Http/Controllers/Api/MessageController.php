@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Message;
 use App\Repositories\Interfaces\MessageRepositoryInterface;
 use App\Repositories\Interfaces\ChannelMemberRepositoryInterface;
+use App\Repositories\Interfaces\PinnedMessageRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -14,13 +15,16 @@ class MessageController extends Controller
 {
     protected $messageRepository;
     protected $memberRepository;
+    protected $pinnedMessageRepository;
 
     public function __construct(
         MessageRepositoryInterface $messageRepository,
-        ChannelMemberRepositoryInterface $memberRepository
+        ChannelMemberRepositoryInterface $memberRepository,
+        PinnedMessageRepositoryInterface $pinnedMessageRepository
     ) {
         $this->messageRepository = $messageRepository;
         $this->memberRepository = $memberRepository;
+        $this->pinnedMessageRepository = $pinnedMessageRepository;
     }
 
     /**
@@ -56,6 +60,8 @@ class MessageController extends Controller
                     'file_size' => $message->file_size,
                     'time' => $message->created_at->format('g:i A'),
                     'created_at' => $message->created_at,
+                    'is_pinned' => $this->pinnedMessageRepository->isPinned($message->id, $channelId),
+                    'pinned_message_id' => $this->pinnedMessageRepository->findByMessageAndChannel($message->id, $channelId)?->id,
                 ]);
 
             return response()->json($messages);
