@@ -1,19 +1,27 @@
 <script setup>
+import { computed } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import WorkspaceSidebar from '@/Components/WorkspaceSidebar.vue';
 import ChannelListSidebar from '@/Components/ChannelListSidebar.vue';
 import MainContent from '@/Components/MainContent.vue';
 
-defineProps({
+const props = defineProps({
     title: String,
     channels: Array,
     'direct-messages': Array,
+    directMessages: Array, // キャメルケース版も追加
     messages: Array,
     activeChannel: Object,
+    activeDirectMessage: Object, // 追加
     manualOffline: Boolean,
 });
 
 const emit = defineEmits(['selectChannel', 'newChannelAdded', 'messageSent', 'messageUpdated', 'messageDeleted', 'toggleManualOffline', 'channelDeleted', 'channelLeft', 'selectDirectMessage', 'directMessageStarted']);
+
+// directMessagesとdirect-messagesの両方に対応
+const directMessagesList = computed(() => {
+    return props.directMessages || props['direct-messages'] || [];
+});
 </script>
 
 <template>
@@ -24,7 +32,7 @@ const emit = defineEmits(['selectChannel', 'newChannelAdded', 'messageSent', 'me
             <WorkspaceSidebar />
             <ChannelListSidebar
                 :channels="channels"
-                :direct-messages="direct-messages"
+                :direct-messages="directMessagesList"
                 :manual-offline="manualOffline"
                 @toggle-manual-offline="emit('toggleManualOffline', $event)"
                 @select-channel="id => emit('selectChannel', id)"
@@ -41,9 +49,10 @@ const emit = defineEmits(['selectChannel', 'newChannelAdded', 'messageSent', 'me
                 <!-- メインコンテンツ -->
                 <slot />
                 <MainContent 
-                    v-if="messages && messages.length > 0"
+                    v-if="activeChannel || activeDirectMessage"
                     :messages="messages" 
                     :active-channel="activeChannel"
+                    :active-direct-message="activeDirectMessage"
                     @message-sent="message => emit('messageSent', message)"
                     @message-updated="message => emit('messageUpdated', message)"
                     @message-deleted="id => emit('messageDeleted', id)"
