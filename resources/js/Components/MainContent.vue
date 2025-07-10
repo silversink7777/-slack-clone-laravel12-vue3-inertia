@@ -7,6 +7,8 @@ import MessageInput from '@/Components/MessageInput.vue';
 import MessageEditModal from '@/Components/MessageEditModal.vue';
 import MessageDeleteModal from '@/Components/MessageDeleteModal.vue';
 import DialogModal from '@/Components/DialogModal.vue';
+import PinMessageButton from '@/Components/PinMessageButton.vue';
+import PinnedMessagesList from '@/Components/PinnedMessagesList.vue';
 
 const page = usePage();
 const currentUser = page.props.auth?.user;
@@ -29,10 +31,25 @@ const showDeleteModal = ref(false);
 const deletingMessage = ref(null);
 const previewFile = ref(null);
 const showPreviewModal = ref(false);
+const messagePinStatus = ref({});
+const pinnedMessageIds = ref({});
+const pinnedMessagesListRef = ref(null);
 
 // messagesプロパティの変更を監視してローカルリストを更新
 watch(() => props.messages, (newMessages) => {
     localMessages.value = [...(newMessages || [])];
+    
+    // ピン留め状態を初期化
+    if (newMessages) {
+        newMessages.forEach(message => {
+            if (message.is_pinned !== undefined) {
+                messagePinStatus.value[message.id] = message.is_pinned;
+            }
+            if (message.pinned_message_id !== undefined) {
+                pinnedMessageIds.value[message.id] = message.pinned_message_id;
+            }
+        });
+    }
 }, { deep: true });
 
 const handleMessageSent = (newMessage) => {
@@ -58,6 +75,27 @@ const handleMessageDeleted = (deletedId) => {
     const idx = localMessages.value.findIndex(msg => msg.id === deletedId);
     if (idx !== -1) localMessages.value.splice(idx, 1);
     emit('messageDeleted', deletedId);
+};
+
+const handlePinToggled = (messageId, isPinned, pinnedMessageId = null) => {
+    messagePinStatus.value[messageId] = isPinned;
+    if (pinnedMessageId) {
+        pinnedMessageIds.value[messageId] = pinnedMessageId;
+    } else {
+        delete pinnedMessageIds.value[messageId];
+    }
+    
+    // ピン留め一覧を更新
+    if (pinnedMessagesListRef.value) {
+        pinnedMessagesListRef.value.refreshPinnedMessages();
+    }
+};
+
+const handlePinRemoved = (pinnedMessageId) => {
+    // ピン留め一覧から削除された場合、対応するメッセージのピン留め状態を更新
+    // ピン留めレコードのIDからメッセージIDを特定する必要がある
+    // この処理は、ピン留め一覧が更新された後に、メッセージ一覧も更新されるため、
+    // 実際にはメッセージ一覧の再取得で対応される
 };
 
 const openEditModal = (message) => {
@@ -99,6 +137,14 @@ const isOwnMessage = (message) => {
     <div class="flex-1 flex flex-col bg-white dark:bg-gray-900">
         <MainHeader :active-channel="activeChannel" :active-direct-message="activeDirectMessage" />
 
+        <!-- ピン留めメッセージ一覧 -->
+        <PinnedMessagesList 
+            v-if="activeChannel" 
+            :channel-id="activeChannel.id"
+            @pin-removed="(pinnedMessageId) => handlePinRemoved(pinnedMessageId)"
+            ref="pinnedMessagesListRef"
+        />
+
         <!-- Messages Area -->
         <div class="flex-1 p-6 overflow-y-auto">
             <template v-if="activeChannel">
@@ -118,6 +164,13 @@ const isOwnMessage = (message) => {
                                 <span class="text-xs text-gray-500 dark:text-gray-400 font-normal ml-2">{{ message.time }}</span>
                             </p>
                             <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <!-- ピン留めボタン -->
+                                <PinMessageButton
+                                    :message-id="message.id"
+                                    :channel-id="activeChannel.id"
+                                    :is-pinned="messagePinStatus[message.id] || false"
+                                    @pin-toggled="(isPinned, pinnedMessageId) => handlePinToggled(message.id, isPinned, pinnedMessageId)"
+                                />
                                 <button
                                     v-if="isOwnMessage(message)"
                                     @click="openEditModal(message)"
