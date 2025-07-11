@@ -1,11 +1,11 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { ChevronDownIcon, ClockIcon, MagnifyingGlassIcon, UserCircleIcon } from '@heroicons/vue/24/outline';
+import { ChevronDownIcon, ClockIcon, MagnifyingGlassIcon, UserCircleIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 import { router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import ThemeToggle from '@/Components/ThemeToggle.vue';
 
-defineProps({
+const props = defineProps({
     activeChannel: Object,
     activeDirectMessage: Object,
 });
@@ -110,6 +110,99 @@ const handleClickOutside = (event) => {
     }
 };
 
+const showExportDialog = ref(false);
+const exportFormat = ref('csv');
+const exportStartDate = ref('');
+const exportEndDate = ref('');
+const exportLoading = ref(false);
+const exportError = ref('');
+const exportDownloadUrl = ref('');
+const exportMessageCount = ref(0);
+
+const openExportDialog = () => {
+    showExportDialog.value = true;
+    exportError.value = '';
+    exportDownloadUrl.value = '';
+    exportMessageCount.value = 0;
+};
+const closeExportDialog = () => {
+    showExportDialog.value = false;
+    exportError.value = '';
+    exportDownloadUrl.value = '';
+    exportMessageCount.value = 0;
+};
+
+const exportMessages = async () => {
+    exportLoading.value = true;
+    exportError.value = '';
+    exportDownloadUrl.value = '';
+    exportMessageCount.value = 0;
+    
+    try {
+        let url = '';
+        let payload = {
+            format: exportFormat.value,
+            start_date: exportStartDate.value || undefined,
+            end_date: exportEndDate.value || undefined,
+            include_files: false,
+        };
+        
+        if (props.activeChannel) {
+            url = '/api/messages/export/channel';
+            payload.channel_id = props.activeChannel.id;
+        } else if (props.activeDirectMessage) {
+            url = '/api/messages/export/direct';
+            payload.partner_id = props.activeDirectMessage.id;
+        } else {
+            exportError.value = 'チャンネルまたはDMを選択してください';
+            exportLoading.value = false;
+            return;
+        }
+        
+        console.log('Exporting messages:', { url, payload });
+        
+        // CSRFトークンを取得
+        const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.content;
+        const headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        };
+        
+        if (csrfToken) {
+            headers['X-CSRF-TOKEN'] = csrfToken;
+        }
+        
+        const res = await axios.post(url, payload, { headers });
+        console.log('Export response:', res.data);
+        
+        if (res.data && res.data.success) {
+            exportDownloadUrl.value = res.data.download_url;
+            exportMessageCount.value = res.data.message_count;
+        } else {
+            exportError.value = res.data?.error || 'エクスポートに失敗しました';
+        }
+    } catch (e) {
+        console.error('Export error:', e);
+        console.error('Export error response:', e.response);
+        
+        if (e.response?.data?.error) {
+            exportError.value = e.response.data.error;
+        } else if (e.response?.status === 403) {
+            exportError.value = 'アクセス権限がありません';
+        } else if (e.response?.status === 404) {
+            exportError.value = 'チャンネルまたはDMが見つかりません';
+        } else if (e.response?.status === 422) {
+            exportError.value = '入力データが正しくありません';
+        } else if (e.response?.status >= 500) {
+            exportError.value = 'サーバーエラーが発生しました';
+        } else {
+            exportError.value = 'エクスポートに失敗しました: ' + (e.message || '不明なエラー');
+        }
+    } finally {
+        exportLoading.value = false;
+    }
+};
+
 onMounted(() => {
     document.addEventListener('click', handleClickOutside);
 });
@@ -130,6 +223,10 @@ onUnmounted(() => {
             </button>
         </div>
         <div class="flex items-center space-x-4">
+            <button @click="openExportDialog" class="flex items-center px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 focus:outline-none" title="メッセージをエクスポート">
+                <ArrowDownTrayIcon class="h-5 w-5 mr-1" />
+                エクスポート
+            </button>
             <ThemeToggle />
             <ClockIcon class="h-6 w-6 text-gray-500 dark:text-gray-400" />
             <div class="relative search-container">
@@ -245,6 +342,37 @@ onUnmounted(() => {
                     >
                         ログアウト
                     </button>
+                </div>
+            </div>
+        </div>
+        <!-- エクスポートダイアログ -->
+        <div v-if="showExportDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
+                <h2 class="text-lg font-bold mb-4">メッセージエクスポート</h2>
+                <div class="mb-2">
+                    <label class="block text-sm font-medium mb-1">形式</label>
+                    <select v-model="exportFormat" class="w-full border rounded px-2 py-1">
+                        <option value="csv">CSV</option>
+                        <option value="json">JSON</option>
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="block text-sm font-medium mb-1">開始日（任意）</label>
+                    <input type="date" v-model="exportStartDate" class="w-full border rounded px-2 py-1" />
+                </div>
+                <div class="mb-2">
+                    <label class="block text-sm font-medium mb-1">終了日（任意）</label>
+                    <input type="date" v-model="exportEndDate" class="w-full border rounded px-2 py-1" />
+                </div>
+                <div class="flex items-center space-x-2 mt-4">
+                    <button @click="exportMessages" :disabled="exportLoading" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 disabled:opacity-50">エクスポート</button>
+                    <button @click="closeExportDialog" class="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400">キャンセル</button>
+                </div>
+                <div v-if="exportLoading" class="mt-2 text-sm text-gray-500">エクスポート中...</div>
+                <div v-if="exportError" class="mt-2 text-sm text-red-500">{{ exportError }}</div>
+                <div v-if="exportDownloadUrl" class="mt-2 text-green-600">
+                    <p>エクスポート成功（{{ exportMessageCount }}件）</p>
+                    <a :href="exportDownloadUrl" class="underline text-blue-600" download>ダウンロード</a>
                 </div>
             </div>
         </div>
