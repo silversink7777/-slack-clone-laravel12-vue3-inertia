@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\DirectMessageController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\PinnedMessageController;
+use App\Http\Controllers\Api\MessageExportController;
 
 Route::middleware(['auth:sanctum', 'web'])->group(function() {
     Route::get('/user', function (Request $request) {
@@ -49,6 +50,12 @@ Route::middleware(['auth:sanctum', 'web'])->group(function() {
     Route::delete('/pinned-messages/{id}', [PinnedMessageController::class, 'destroy']);
     Route::delete('/pinned-messages', [PinnedMessageController::class, 'destroyByMessageAndChannel']);
     Route::get('/pinned-messages/check', [PinnedMessageController::class, 'check']);
+
+    // メッセージエクスポートAPI
+    Route::post('/messages/export/channel', [MessageExportController::class, 'exportChannelMessages'])->name('api.messages.export.channel');
+    Route::post('/messages/export/direct', [MessageExportController::class, 'exportDirectMessages'])->name('api.messages.export.direct');
+    Route::get('/messages/export/download/{filename}', [MessageExportController::class, 'downloadExport'])->name('api.messages.export.download');
+    Route::get('/messages/export/history', [MessageExportController::class, 'getExportHistory'])->name('api.messages.export.history');
 });
 
 // 認証状態確認用のルート（デバッグ用）
