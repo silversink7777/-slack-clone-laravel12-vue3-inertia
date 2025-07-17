@@ -4,6 +4,23 @@ import { ChevronDownIcon, ClockIcon, MagnifyingGlassIcon, UserCircleIcon, ArrowD
 import { router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import ThemeToggle from '@/Components/ThemeToggle.vue';
+import MarkdownIt from 'markdown-it';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github-dark.css';
+
+const md = new MarkdownIt({ 
+    html: false, 
+    linkify: true, 
+    breaks: true,
+    highlight: function (str, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+            try {
+                return hljs.highlight(str, { language: lang }).value;
+            } catch (__) {}
+        }
+        return ''; // デフォルトのエスケープ処理を使用
+    }
+});
 
 const props = defineProps({
     activeChannel: Object,
@@ -293,8 +310,8 @@ onUnmounted(() => {
                                         <span class="text-xs text-gray-500 dark:text-gray-400">#{{ message.channel.name }}</span>
                                         <span class="text-xs text-gray-400 dark:text-gray-500">{{ message.date }} {{ message.time }}</span>
                                     </div>
-                                    <div class="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                                        <span v-html="highlightSearchTerm(message.content, searchQuery)"></span>
+                                    <div class="mt-1 text-sm text-gray-700 dark:text-gray-300 prose prose-sm max-w-none dark:prose-invert">
+                                        <span v-if="message.content" v-html="md.render(message.content)" class="markdown-content"></span>
                                     </div>
                                 </div>
                             </div>

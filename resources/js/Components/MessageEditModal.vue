@@ -2,6 +2,23 @@
 import { ref, watch } from 'vue';
 import { XMarkIcon, CheckIcon } from '@heroicons/vue/24/outline';
 import axios from 'axios';
+import MarkdownIt from 'markdown-it';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github-dark.css';
+
+const md = new MarkdownIt({ 
+    html: false, 
+    linkify: true, 
+    breaks: true,
+    highlight: function (str, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+            try {
+                return hljs.highlight(str, { language: lang }).value;
+            } catch (__) {}
+        }
+        return ''; // デフォルトのエスケープ処理を使用
+    }
+});
 
 const props = defineProps({
     show: Boolean,
@@ -95,7 +112,9 @@ const handleKeyPress = (event) => {
                     rows="4"
                     :disabled="isUpdating"
                 ></textarea>
-                
+                <div v-if="editContent" class="mt-2 p-2 bg-gray-50 rounded text-gray-800 border prose prose-sm max-w-none dark:prose-invert">
+                    <span v-html="md.render(editContent)" class="markdown-content"></span>
+                </div>
                 <div v-if="errorMessage" class="mt-2 text-red-600 text-sm">
                     {{ errorMessage }}
                 </div>
