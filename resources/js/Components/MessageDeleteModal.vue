@@ -2,6 +2,23 @@
 import { ref } from 'vue';
 import { XMarkIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import axios from 'axios';
+import MarkdownIt from 'markdown-it';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github-dark.css';
+
+const md = new MarkdownIt({ 
+    html: false, 
+    linkify: true, 
+    breaks: true,
+    highlight: function (str, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+            try {
+                return hljs.highlight(str, { language: lang }).value;
+            } catch (__) {}
+        }
+        return ''; // デフォルトのエスケープ処理を使用
+    }
+});
 
 const props = defineProps({
     show: Boolean,
@@ -51,8 +68,8 @@ const handleClose = () => {
             </div>
             <div class="mb-4 text-gray-700">
                 本当にこのメッセージを削除しますか？
-                <div class="mt-2 p-2 bg-gray-100 rounded text-gray-800">
-                    {{ message?.content }}
+                <div class="mt-2 p-2 bg-gray-100 rounded text-gray-800 prose prose-sm max-w-none dark:prose-invert">
+                    <span v-if="message?.content" v-html="md.render(message.content)" class="markdown-content"></span>
                 </div>
                 <div v-if="errorMessage" class="mt-2 text-red-600 text-sm">
                     {{ errorMessage }}

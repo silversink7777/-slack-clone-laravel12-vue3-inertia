@@ -62,7 +62,7 @@
                                 </button>
                             </div>
                             <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                                {{ pinnedMessage.message.content }}
+                                <span v-if="pinnedMessage.message.content" v-html="md.render(pinnedMessage.message.content)"></span>
                             </p>
                             <!-- ファイル添付表示 -->
                             <div v-if="pinnedMessage.message.file_path" class="mt-2">
@@ -92,6 +92,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import MarkdownIt from 'markdown-it';
+const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
 
 const props = defineProps({
     channelId: {

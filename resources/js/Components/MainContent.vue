@@ -9,6 +9,9 @@ import MessageDeleteModal from '@/Components/MessageDeleteModal.vue';
 import DialogModal from '@/Components/DialogModal.vue';
 import PinMessageButton from '@/Components/PinMessageButton.vue';
 import PinnedMessagesList from '@/Components/PinnedMessagesList.vue';
+import MarkdownIt from 'markdown-it';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github-dark.css';
 
 const page = usePage();
 const currentUser = page.props.auth?.user;
@@ -34,6 +37,20 @@ const showPreviewModal = ref(false);
 const messagePinStatus = ref({});
 const pinnedMessageIds = ref({});
 const pinnedMessagesListRef = ref(null);
+
+const md = new MarkdownIt({ 
+    html: false, 
+    linkify: true, 
+    breaks: true,
+    highlight: function (str, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+            try {
+                return hljs.highlight(str, { language: lang }).value;
+            } catch (__) {}
+        }
+        return ''; // デフォルトのエスケープ処理を使用
+    }
+});
 
 // messagesプロパティの変更を監視してローカルリストを更新
 watch(() => props.messages, (newMessages) => {
@@ -191,8 +208,8 @@ const isOwnMessage = (message) => {
                                 </button>
                             </div>
                         </div>
-                        <div class="mt-1">
-                            <span v-if="message.content">{{ message.content }}</span>
+                        <div class="mt-1 prose prose-sm max-w-none dark:prose-invert">
+                            <span v-if="message.content" v-html="md.render(message.content)" class="markdown-content"></span>
                         </div>
                         <!-- ファイル添付表示 -->
                         <div v-if="message.file_path" class="mt-2">
@@ -296,8 +313,8 @@ const isOwnMessage = (message) => {
                                 </button>
                             </div>
                         </div>
-                        <div class="mt-1">
-                            <span v-if="message.content">{{ message.content }}</span>
+                        <div class="mt-1 prose prose-sm max-w-none dark:prose-invert">
+                            <span v-if="message.content" v-html="md.render(message.content)" class="markdown-content"></span>
                         </div>
                         <!-- ファイル添付表示 -->
                         <div v-if="message.file_path" class="mt-2">

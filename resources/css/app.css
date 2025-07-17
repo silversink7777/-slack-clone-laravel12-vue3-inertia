@@ -5,3 +5,101 @@
 [x-cloak] {
     display: none;
 }
+
+/* コードブロックのスタイリング */
+.markdown-content pre {
+    background-color: #1e293b;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    overflow-x: auto;
+    border: 1px solid #334155;
+}
+
+.markdown-content pre code {
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
+    font-family: 'Fira Code', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #e2e8f0;
+}
+
+.markdown-content code {
+    background-color: #f1f5f9;
+    color: #1e293b;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-family: 'Fira Code', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.875rem;
+}
+
+.dark .markdown-content code {
+    background-color: #334155;
+    color: #e2e8f0;
+}
+
+/* インラインコードのスタイリング */
+.markdown-content p code {
+    background-color: #f1f5f9;
+    color: #1e293b;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-family: 'Fira Code', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.875rem;
+}
+
+.dark .markdown-content p code {
+    background-color: #334155;
+    color: #e2e8f0;
+}
+
+/* コードブロックの言語表示 */
+.markdown-content pre::before {
+    content: attr(data-language);
+    display: block;
+    background-color: #475569;
+    color: #e2e8f0;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 0.25rem 0.25rem 0 0;
+    margin: -1rem -1rem 1rem -1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* シンタックスハイライトの色調整 */
+.markdown-content .hljs {
+    background: transparent !important;
+}
+
+.markdown-content .hljs-keyword {
+    color: #fbbf24 !important;
+}
+
+.markdown-content .hljs-string {
+    color: #34d399 !important;
+}
+
+.markdown-content .hljs-comment {
+    color: #9ca3af !important;
+    font-style: italic;
+}
+
+.markdown-content .hljs-function {
+    color: #60a5fa !important;
+}
+
+.markdown-content .hljs-number {
+    color: #f87171 !important;
+}
+
+.markdown-content .hljs-variable {
+    color: #e2e8f0 !important;
+}
+
+.markdown-content .hljs-title {
+    color: #a78bfa !important;
+}

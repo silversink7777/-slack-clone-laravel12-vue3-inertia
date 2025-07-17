@@ -7,8 +7,28 @@ import {
     VideoCameraIcon,
     MicrophoneIcon,
     PaperAirplaneIcon,
+    EyeIcon,
+    EyeSlashIcon,
+    CodeBracketIcon,
 } from '@heroicons/vue/24/outline';
 import axios from 'axios';
+import MarkdownIt from 'markdown-it';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github-dark.css';
+
+const md = new MarkdownIt({ 
+    html: false, 
+    linkify: true, 
+    breaks: true,
+    highlight: function (str, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+            try {
+                return hljs.highlight(str, { language: lang }).value;
+            } catch (__) {}
+        }
+        return ''; // デフォルトのエスケープ処理を使用
+    }
+});
 
 const props = defineProps({
     activeChannel: Object,
@@ -19,9 +39,11 @@ const emit = defineEmits(['messageSent']);
 
 const messageContent = ref('');
 const isSending = ref(false);
+const showPreview = ref(false);
 
 // 絵文字ピッカー表示制御
 const showEmojiPicker = ref(false);
+const showCodeBlockMenu = ref(false);
 const emojiList = [
     '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇',
     '🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚',
@@ -37,6 +59,30 @@ const emojiList = [
     '👍','👎','👏','🙌','🙏','💪','👀','👋','🤙','💯',
     '🔥','✨','🎉','🎊','❤️','🧡','💛','💚','💙','💜',
     '🖤','🤍','🤎','💔','💕','💞','💓','💗','💖','💘',
+];
+
+// コードブロック言語リスト
+const codeLanguages = [
+    { name: 'JavaScript', value: 'javascript' },
+    { name: 'Python', value: 'python' },
+    { name: 'PHP', value: 'php' },
+    { name: 'HTML', value: 'html' },
+    { name: 'CSS', value: 'css' },
+    { name: 'SQL', value: 'sql' },
+    { name: 'JSON', value: 'json' },
+    { name: 'XML', value: 'xml' },
+    { name: 'Markdown', value: 'markdown' },
+    { name: 'Bash', value: 'bash' },
+    { name: 'Java', value: 'java' },
+    { name: 'C++', value: 'cpp' },
+    { name: 'C#', value: 'csharp' },
+    { name: 'Ruby', value: 'ruby' },
+    { name: 'Go', value: 'go' },
+    { name: 'Rust', value: 'rust' },
+    { name: 'TypeScript', value: 'typescript' },
+    { name: 'Vue', value: 'vue' },
+    { name: 'React', value: 'jsx' },
+    { name: 'なし', value: '' }
 ];
 
 const file = ref(null);
@@ -130,6 +176,82 @@ const insertEmoji = (emoji) => {
     showEmojiPicker.value = false;
 };
 
+// 選択されたテキストをコードブロック形式に変換
+const convertToCodeBlock = () => {
+    const textarea = document.querySelector('textarea');
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = messageContent.value.substring(start, end);
+    
+    if (selectedText.trim()) {
+        // 選択されたテキストをコードブロックで囲む
+        const codeBlock = '```\n' + selectedText + '\n```';
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            codeBlock +
+            messageContent.value.substring(end);
+        
+        // カーソル位置をコードブロックの後ろに
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + codeBlock.length;
+            textarea.focus();
+        }, 0);
+    } else {
+        // テキストが選択されていない場合は、カーソル位置にコードブロックテンプレートを挿入
+        const codeBlockTemplate = '```\n\n```';
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            codeBlockTemplate +
+            messageContent.value.substring(end);
+        
+        // カーソル位置をコードブロックの中に
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + 4; // ```\n の後ろ
+            textarea.focus();
+        }, 0);
+    }
+};
+
+// 言語指定付きコードブロック変換
+const convertToLanguageCodeBlock = (language = '') => {
+    const textarea = document.querySelector('textarea');
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = messageContent.value.substring(start, end);
+    
+    if (selectedText.trim()) {
+        // 選択されたテキストを言語指定付きコードブロックで囲む
+        const codeBlock = '```' + language + '\n' + selectedText + '\n```';
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            codeBlock +
+            messageContent.value.substring(end);
+        
+        // カーソル位置をコードブロックの後ろに
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + codeBlock.length;
+            textarea.focus();
+        }, 0);
+    } else {
+        // テキストが選択されていない場合は、カーソル位置に言語指定付きコードブロックテンプレートを挿入
+        const codeBlockTemplate = '```' + language + '\n\n```';
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            codeBlockTemplate +
+            messageContent.value.substring(end);
+        
+        // カーソル位置をコードブロックの中に
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + 4 + language.length; // ```language\n の後ろ
+            textarea.focus();
+        }, 0);
+    }
+};
+
 // ピッカー外クリックで閉じる
 const handleClickOutside = (event) => {
     if (
@@ -138,6 +260,14 @@ const handleClickOutside = (event) => {
         !event.target.closest('.emoji-picker-toggle')
     ) {
         showEmojiPicker.value = false;
+    }
+    
+    if (
+        showCodeBlockMenu.value &&
+        !event.target.closest('.code-block-menu-popover') &&
+        !event.target.closest('.code-block-menu-toggle')
+    ) {
+        showCodeBlockMenu.value = false;
     }
 };
 
@@ -158,6 +288,13 @@ if (typeof window !== 'undefined') {
                     rows="1"
                     :disabled="isSending"
                 ></textarea>
+                
+                <!-- Markdownプレビュー -->
+                <div v-if="showPreview && messageContent.trim()" class="mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">プレビュー:</div>
+                    <div class="text-sm text-gray-800 dark:text-gray-200 prose prose-sm max-w-none dark:prose-invert markdown-content" v-html="md.render(messageContent)"></div>
+                </div>
+                
                 <!-- ファイルプレビュー -->
                 <div v-if="filePreview" class="mt-2">
                     <img :src="filePreview" alt="preview" class="max-h-32 rounded border" />
@@ -166,6 +303,7 @@ if (typeof window !== 'undefined') {
                     <span class="text-xs text-gray-500">{{ file.name }}</span>
                 </div>
                 <button v-if="file" @click="clearFile" class="text-xs text-red-500 ml-2">ファイルを削除</button>
+                
                 <!-- シンプルな絵文字ピッカー -->
                 <div v-if="showEmojiPicker" class="emoji-picker-popover absolute left-0 bottom-12 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded shadow-lg p-2 w-80 max-h-60 overflow-y-auto flex flex-wrap gap-1">
                     <button
@@ -178,6 +316,20 @@ if (typeof window !== 'undefined') {
                         {{ emoji }}
                     </button>
                 </div>
+                
+                <!-- コードブロック言語選択メニュー -->
+                <div v-if="showCodeBlockMenu" class="code-block-menu-popover absolute left-0 bottom-12 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded shadow-lg p-2 w-48 max-h-60 overflow-y-auto">
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mb-2 px-2">言語を選択:</div>
+                    <button
+                        v-for="lang in codeLanguages"
+                        :key="lang.value"
+                        class="w-full text-left px-2 py-1 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                        @click.stop="convertToLanguageCodeBlock(lang.value); showCodeBlockMenu = false"
+                        type="button"
+                    >
+                        {{ lang.name }}
+                    </button>
+                </div>
             </div>
             <div class="flex items-center justify-between mt-2">
                 <div class="flex items-center space-x-2">
@@ -187,8 +339,31 @@ if (typeof window !== 'undefined') {
                     </label>
                     <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><VideoCameraIcon class="h-6 w-6" /></button>
                     <button class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"><MicrophoneIcon class="h-6 w-6" /></button>
+                    <!-- コードブロックボタン -->
+                    <div class="relative">
+                        <button 
+                            @click="convertToCodeBlock"
+                            @contextmenu.prevent="showCodeBlockMenu = !showCodeBlockMenu"
+                            class="code-block-menu-toggle text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+                            title="コードブロックに変換 (右クリックで言語選択)"
+                            type="button"
+                        >
+                            <CodeBracketIcon class="h-6 w-6" />
+                        </button>
+                    </div>
                 </div>
                 <div class="flex items-center space-x-2">
+                    <!-- プレビュートグルボタン -->
+                    <button 
+                        v-if="messageContent.trim()"
+                        @click="showPreview = !showPreview"
+                        class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+                        :title="showPreview ? 'プレビューを非表示' : 'プレビューを表示'"
+                        type="button"
+                    >
+                        <EyeIcon v-if="!showPreview" class="h-6 w-6" />
+                        <EyeSlashIcon v-else class="h-6 w-6" />
+                    </button>
                     <button 
                         class="emoji-picker-toggle text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
                         @click.stop="showEmojiPicker = !showEmojiPicker"
