@@ -15,6 +15,7 @@ import {
     BoldIcon,
     ItalicIcon,
     MinusIcon,
+    LinkIcon,
 } from '@heroicons/vue/24/outline';
 import axios from 'axios';
 import MarkdownIt from 'markdown-it';
@@ -35,6 +36,18 @@ const md = new MarkdownIt({
     }
 });
 
+// リンクにtarget="_blank"とrel="noopener noreferrer"を追加
+const defaultRender = md.renderer.rules.link_open || function(tokens, idx, options, env, self) {
+    return self.renderToken(tokens, idx, options);
+};
+
+md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+    const token = tokens[idx];
+    token.attrSet('target', '_blank');
+    token.attrSet('rel', 'noopener noreferrer');
+    return defaultRender(tokens, idx, options, env, self);
+};
+
 const props = defineProps({
     activeChannel: Object,
     activeDirectMessage: Object,
@@ -49,6 +62,10 @@ const showPreview = ref(false);
 // 絵文字ピッカー表示制御
 const showEmojiPicker = ref(false);
 const showCodeBlockMenu = ref(false);
+const showLinkModal = ref(false);
+const linkText = ref('');
+const linkUrl = ref('');
+const selectedTextForLink = ref('');
 const emojiList = [
     '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇',
     '🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚',
@@ -514,6 +531,88 @@ const convertToNumberedList = () => {
     }
 };
 
+// リンクモーダルを開く
+const openLinkModal = (event) => {
+    if (event) {
+        event.stopPropagation(); // イベントの伝播を停止
+    }
+    console.log('openLinkModal called'); // デバッグログ
+    const textarea = document.querySelector('textarea');
+    if (!textarea) {
+        console.log('textarea not found'); // デバッグログ
+        return;
+    }
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = messageContent.value.substring(start, end);
+    
+    console.log('Selected text:', selectedText); // デバッグログ
+    console.log('showLinkModal before:', showLinkModal.value); // デバッグログ
+    
+    selectedTextForLink.value = selectedText;
+    linkText.value = selectedText.trim();
+    linkUrl.value = '';
+    showLinkModal.value = true;
+    
+    console.log('showLinkModal after:', showLinkModal.value); // デバッグログ
+};
+
+// リンクを適用
+const applyLink = () => {
+    const textarea = document.querySelector('textarea');
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    
+    if (!linkText.value.trim() || !linkUrl.value.trim()) {
+        return;
+    }
+    
+    const linkMarkdown = `[${linkText.value}](${linkUrl.value})`;
+    
+    if (selectedTextForLink.value.trim()) {
+        // 選択されたテキストをリンクに置き換え
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            linkMarkdown +
+            messageContent.value.substring(end);
+        
+        // カーソル位置をリンクの後ろに
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + linkMarkdown.length;
+            textarea.focus();
+        }, 0);
+    } else {
+        // テキストが選択されていない場合は、カーソル位置にリンクを挿入
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            linkMarkdown +
+            messageContent.value.substring(end);
+        
+        // カーソル位置をリンクの後ろに
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + linkMarkdown.length;
+            textarea.focus();
+        }, 0);
+    }
+    
+    // モーダルを閉じる
+    closeLinkModal();
+};
+
+// リンクモーダルを閉じる
+const closeLinkModal = () => {
+    console.log('closeLinkModal called'); // デバッグログ
+    console.log('showLinkModal before close:', showLinkModal.value); // デバッグログ
+    showLinkModal.value = false;
+    linkText.value = '';
+    linkUrl.value = '';
+    selectedTextForLink.value = '';
+    console.log('showLinkModal after close:', showLinkModal.value); // デバッグログ
+};
+
 // ピッカー外クリックで閉じる
 const handleClickOutside = (event) => {
     if (
@@ -530,6 +629,15 @@ const handleClickOutside = (event) => {
         !event.target.closest('.code-block-menu-toggle')
     ) {
         showCodeBlockMenu.value = false;
+    }
+    
+    if (
+        showLinkModal.value &&
+        !event.target.closest('.link-modal-popover') &&
+        !event.target.closest('.link-button-toggle')
+    ) {
+        console.log('Closing link modal due to outside click'); // デバッグログ
+        closeLinkModal();
     }
 };
 
@@ -667,6 +775,15 @@ if (typeof window !== 'undefined') {
                     >
                         <MinusIcon class="h-6 w-6" />
                     </button>
+                    <!-- リンクボタン -->
+                    <button 
+                        @click.stop="(event) => { console.log('Link button clicked'); openLinkModal(event); }"
+                        class="link-button-toggle text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+                        title="リンクを追加"
+                        type="button"
+                    >
+                        <LinkIcon class="h-6 w-6" />
+                    </button>
                 </div>
                 <div class="flex items-center space-x-2">
                     <!-- プレビュートグルボタン -->
@@ -696,6 +813,69 @@ if (typeof window !== 'undefined') {
                         type="button"
                     >
                         <PaperAirplaneIcon class="h-5 w-5" />
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- リンクモーダル -->
+        <div v-if="showLinkModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-30">
+            <!-- Debug info -->
+            <div class="absolute top-0 left-0 bg-red-500 text-white p-2 text-xs">
+                Modal is visible - showLinkModal: {{ showLinkModal }}
+            </div>
+            <div class="link-modal-popover bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">リンクを追加する</h3>
+                    <button
+                        @click="closeLinkModal"
+                        class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                    >
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            テキスト
+                        </label>
+                        <input
+                            v-model="linkText"
+                            type="text"
+                            class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="リンクテキストを入力"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            リンク
+                        </label>
+                        <input
+                            v-model="linkUrl"
+                            type="url"
+                            class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="https://example.com"
+                        />
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button
+                        @click="closeLinkModal"
+                        class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                    >
+                        キャンセル
+                    </button>
+                    <button
+                        @click="applyLink"
+                        :disabled="!linkText.trim() || !linkUrl.trim()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                        保存する
                     </button>
                 </div>
             </div>

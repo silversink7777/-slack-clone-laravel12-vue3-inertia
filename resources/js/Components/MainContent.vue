@@ -52,6 +52,18 @@ const md = new MarkdownIt({
     }
 });
 
+// リンクにtarget="_blank"とrel="noopener noreferrer"を追加
+const defaultRender = md.renderer.rules.link_open || function(tokens, idx, options, env, self) {
+    return self.renderToken(tokens, idx, options);
+};
+
+md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+    const token = tokens[idx];
+    token.attrSet('target', '_blank');
+    token.attrSet('rel', 'noopener noreferrer');
+    return defaultRender(tokens, idx, options, env, self);
+};
+
 // messagesプロパティの変更を監視してローカルリストを更新
 watch(() => props.messages, (newMessages) => {
     localMessages.value = [...(newMessages || [])];
