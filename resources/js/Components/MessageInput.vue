@@ -12,6 +12,7 @@ import {
     CodeBracketIcon,
     ListBulletIcon,
     ChatBubbleLeftRightIcon,
+    BoldIcon,
 } from '@heroicons/vue/24/outline';
 import axios from 'axios';
 import MarkdownIt from 'markdown-it';
@@ -353,6 +354,44 @@ const convertToQuote = () => {
     }
 };
 
+// 選択されたテキストを太文字形式に変換
+const convertToBold = () => {
+    const textarea = document.querySelector('textarea');
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = messageContent.value.substring(start, end);
+    
+    if (selectedText.trim()) {
+        // 選択されたテキストを太文字形式で囲む
+        const boldText = '**' + selectedText + '**';
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            boldText +
+            messageContent.value.substring(end);
+        
+        // カーソル位置を太文字テキストの後ろに
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + boldText.length;
+            textarea.focus();
+        }, 0);
+    } else {
+        // テキストが選択されていない場合は、カーソル位置に太文字テンプレートを挿入
+        const boldTemplate = '**太文字**';
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            boldTemplate +
+            messageContent.value.substring(end);
+        
+        // カーソル位置を太文字テンプレートの中に
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + 2; // ** の後ろ
+            textarea.focus();
+        }, 0);
+    }
+};
+
 // ピッカー外クリックで閉じる
 const handleClickOutside = (event) => {
     if (
@@ -469,6 +508,15 @@ if (typeof window !== 'undefined') {
                         type="button"
                     >
                         <ChatBubbleLeftRightIcon class="h-6 w-6" />
+                    </button>
+                    <!-- 太文字ボタン -->
+                    <button 
+                        @click="convertToBold"
+                        class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+                        title="太文字に変換"
+                        type="button"
+                    >
+                        <BoldIcon class="h-6 w-6" />
                     </button>
                 </div>
                 <div class="flex items-center space-x-2">

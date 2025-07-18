@@ -131,3 +131,23 @@
 .markdown-content li {
     margin: 0.25rem 0;
 }
+
+/* 太文字のスタイリング */
+.markdown-content strong {
+    font-weight: 700;
+    color: inherit;
+}
+
+/* 斜体のスタイリング */
+.markdown-content em {
+    font-style: italic;
+    color: inherit;
+}
+
+/* 太文字と斜体の組み合わせ */
+.markdown-content strong em,
+.markdown-content em strong {
+    font-weight: 700;
+    font-style: italic;
+    color: inherit;
+}
