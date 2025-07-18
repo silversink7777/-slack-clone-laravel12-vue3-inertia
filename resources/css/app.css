@@ -145,6 +145,7 @@
 
 /* ネストしたリストのスタイリング */
 .markdown-content ul ul {
+    
     list-style-type: circle;
     margin: 0.25rem 0;
 }
@@ -176,6 +177,49 @@
 .markdown-content em strong {
     font-weight: 700;
     font-style: italic;
+    color: inherit;
+}
+
+/* リンクのスタイリング */
+.markdown-content a {
+    color: #3b82f6;
+    text-decoration: underline;
+    text-decoration-color: #3b82f6;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+}
+
+.markdown-content a:hover {
+    color: #2563eb;
+    text-decoration-color: #2563eb;
+}
+
+.dark .markdown-content a {
+    color: #60a5fa;
+    text-decoration-color: #60a5fa;
+}
+
+.dark .markdown-content a:hover {
+    color: #93c5fd;
+    text-decoration-color: #93c5fd;
+}
+
+/* リンクと他のスタイルの組み合わせ */
+.markdown-content a strong,
+.markdown-content strong a {
+    font-weight: 700;
+    color: inherit;
+}
+
+.markdown-content a em,
+.markdown-content em a {
+    font-style: italic;
+    color: inherit;
+}
+
+.markdown-content a del,
+.markdown-content del a {
+    text-decoration: line-through;
     color: inherit;
 }
 
