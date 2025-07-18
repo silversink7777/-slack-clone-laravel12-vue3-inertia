@@ -10,6 +10,7 @@ import {
     EyeIcon,
     EyeSlashIcon,
     CodeBracketIcon,
+    ListBulletIcon,
 } from '@heroicons/vue/24/outline';
 import axios from 'axios';
 import MarkdownIt from 'markdown-it';
@@ -127,21 +128,32 @@ const sendMessage = async () => {
         if (file.value) {
             formData.append('file', file.value);
         }
-        // CSRFトークンをmetaから取得
+        
+        // CSRFトークンをFormDataに追加（axiosのインターセプターでもX-CSRF-TOKENヘッダーが設定される）
         const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.content;
-        const headers = { 'Content-Type': 'multipart/form-data' };
-        if (csrfToken) headers['X-CSRF-TOKEN'] = csrfToken;
+        console.log('CSRF Token:', csrfToken); // デバッグ用
+        if (csrfToken) {
+            formData.append('_token', csrfToken);
+        }
+        
+        // FormDataの内容をデバッグ用に表示
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}:`, value);
+        }
+        
         let response;
         if (props.activeDirectMessage) {
-            response = await axios.post('/api/direct-messages', formData, { headers });
+            response = await axios.post('/api/direct-messages', formData);
         } else {
-            response = await axios.post('/messages', formData, { headers });
+            response = await axios.post('/messages', formData);
         }
         emit('messageSent', response.data);
         messageContent.value = '';
         clearFile();
     } catch (error) {
         console.error('Message sending failed:', error);
+        console.error('Error response:', error.response?.data); // デバッグ用
+        console.error('Error status:', error.response?.status); // デバッグ用
         // TODO: エラーメッセージをユーザーに表示
     } finally {
         isSending.value = false;
@@ -252,6 +264,50 @@ const convertToLanguageCodeBlock = (language = '') => {
     }
 };
 
+// 選択されたテキストを箇条書きリスト形式に変換
+const convertToBulletList = () => {
+    const textarea = document.querySelector('textarea');
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = messageContent.value.substring(start, end);
+    
+    if (selectedText.trim()) {
+        // 選択されたテキストを行ごとに分割して箇条書きリストに変換
+        const lines = selectedText.split('\n');
+        const bulletList = lines
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .map(line => '- ' + line)
+            .join('\n');
+        
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            bulletList +
+            messageContent.value.substring(end);
+        
+        // カーソル位置を箇条書きリストの後ろに
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + bulletList.length;
+            textarea.focus();
+        }, 0);
+    } else {
+        // テキストが選択されていない場合は、カーソル位置に箇条書きリストテンプレートを挿入
+        const bulletListTemplate = '- ';
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            bulletListTemplate +
+            messageContent.value.substring(end);
+        
+        // カーソル位置を箇条書きリストの後ろに
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + bulletListTemplate.length;
+            textarea.focus();
+        }, 0);
+    }
+};
+
 // ピッカー外クリックで閉じる
 const handleClickOutside = (event) => {
     if (
@@ -351,6 +407,15 @@ if (typeof window !== 'undefined') {
                             <CodeBracketIcon class="h-6 w-6" />
                         </button>
                     </div>
+                    <!-- 箇条書きリストボタン -->
+                    <button 
+                        @click="convertToBulletList"
+                        class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+                        title="箇条書きリストに変換"
+                        type="button"
+                    >
+                        <ListBulletIcon class="h-6 w-6" />
+                    </button>
                 </div>
                 <div class="flex items-center space-x-2">
                     <!-- プレビュートグルボタン -->

@@ -31,7 +31,10 @@ window.axios.interceptors.request.use(function (config) {
     if (['post', 'put', 'delete', 'patch'].includes(config.method.toLowerCase())) {
         const token = document.head.querySelector('meta[name="csrf-token"]');
         if (token) {
-            config.headers['X-CSRF-TOKEN'] = token.content;
+            // FormDataを使用する場合はX-CSRF-TOKENヘッダーを設定しない（FormDataの_tokenフィールドを使用）
+            if (!(config.data instanceof FormData)) {
+                config.headers['X-CSRF-TOKEN'] = token.content;
+            }
         }
     }
     return config;
