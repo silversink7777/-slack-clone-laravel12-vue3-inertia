@@ -132,6 +132,33 @@
     margin: 0.25rem 0;
 }
 
+/* 順番付きリストのスタイリング */
+.markdown-content ol {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+    margin: 0.5rem 0;
+}
+
+.markdown-content ol li {
+    margin: 0.25rem 0;
+}
+
+/* ネストしたリストのスタイリング */
+.markdown-content ul ul {
+    list-style-type: circle;
+    margin: 0.25rem 0;
+}
+
+.markdown-content ol ol {
+    list-style-type: lower-alpha;
+    margin: 0.25rem 0;
+}
+
+.markdown-content ul ol,
+.markdown-content ol ul {
+    margin: 0.25rem 0;
+}
+
 /* 太文字のスタイリング */
 .markdown-content strong {
     font-weight: 700;
