@@ -11,6 +11,7 @@ import {
     EyeSlashIcon,
     CodeBracketIcon,
     ListBulletIcon,
+    ChatBubbleLeftRightIcon,
 } from '@heroicons/vue/24/outline';
 import axios from 'axios';
 import MarkdownIt from 'markdown-it';
@@ -308,6 +309,50 @@ const convertToBulletList = () => {
     }
 };
 
+// 選択されたテキストを引用形式に変換
+const convertToQuote = () => {
+    const textarea = document.querySelector('textarea');
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = messageContent.value.substring(start, end);
+    
+    if (selectedText.trim()) {
+        // 選択されたテキストを行ごとに分割して引用形式に変換
+        const lines = selectedText.split('\n');
+        const quoteText = lines
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .map(line => '> ' + line)
+            .join('\n');
+        
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            quoteText +
+            messageContent.value.substring(end);
+        
+        // カーソル位置を引用テキストの後ろに
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + quoteText.length;
+            textarea.focus();
+        }, 0);
+    } else {
+        // テキストが選択されていない場合は、カーソル位置に引用テンプレートを挿入
+        const quoteTemplate = '> ';
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            quoteTemplate +
+            messageContent.value.substring(end);
+        
+        // カーソル位置を引用テンプレートの後ろに
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + quoteTemplate.length;
+            textarea.focus();
+        }, 0);
+    }
+};
+
 // ピッカー外クリックで閉じる
 const handleClickOutside = (event) => {
     if (
@@ -415,6 +460,15 @@ if (typeof window !== 'undefined') {
                         type="button"
                     >
                         <ListBulletIcon class="h-6 w-6" />
+                    </button>
+                    <!-- 引用ボタン -->
+                    <button 
+                        @click="convertToQuote"
+                        class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+                        title="引用に変換"
+                        type="button"
+                    >
+                        <ChatBubbleLeftRightIcon class="h-6 w-6" />
                     </button>
                 </div>
                 <div class="flex items-center space-x-2">
