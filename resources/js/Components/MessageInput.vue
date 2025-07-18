@@ -470,6 +470,50 @@ const convertToStrikethrough = () => {
     }
 };
 
+// 選択されたテキストを順番付きリスト形式に変換
+const convertToNumberedList = () => {
+    const textarea = document.querySelector('textarea');
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = messageContent.value.substring(start, end);
+    
+    if (selectedText.trim()) {
+        // 選択されたテキストを行ごとに分割して順番付きリストに変換
+        const lines = selectedText.split('\n');
+        const numberedList = lines
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .map((line, index) => `${index + 1}. ${line}`)
+            .join('\n');
+        
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            numberedList +
+            messageContent.value.substring(end);
+        
+        // カーソル位置を順番付きリストの後ろに
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + numberedList.length;
+            textarea.focus();
+        }, 0);
+    } else {
+        // テキストが選択されていない場合は、カーソル位置に順番付きリストテンプレートを挿入
+        const numberedListTemplate = '1. ';
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            numberedListTemplate +
+            messageContent.value.substring(end);
+        
+        // カーソル位置を順番付きリストテンプレートの後ろに
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + numberedListTemplate.length;
+            textarea.focus();
+        }, 0);
+    }
+};
+
 // ピッカー外クリックで閉じる
 const handleClickOutside = (event) => {
     if (
@@ -577,6 +621,15 @@ if (typeof window !== 'undefined') {
                         type="button"
                     >
                         <ListBulletIcon class="h-6 w-6" />
+                    </button>
+                    <!-- 順番付きリストボタン -->
+                    <button 
+                        @click="convertToNumberedList"
+                        class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+                        title="順番付きリストに変換"
+                        type="button"
+                    >
+                        <ListBulletIcon class="h-6 w-6 transform rotate-90" />
                     </button>
                     <!-- 引用ボタン -->
                     <button 
