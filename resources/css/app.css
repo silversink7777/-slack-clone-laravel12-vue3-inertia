@@ -151,3 +151,34 @@
     font-style: italic;
     color: inherit;
 }
+
+/* 取り消し線のスタイリング */
+.markdown-content del {
+    text-decoration: line-through;
+    color: inherit;
+}
+
+/* 取り消し線と他のスタイルの組み合わせ */
+.markdown-content del strong,
+.markdown-content strong del {
+    text-decoration: line-through;
+    font-weight: 700;
+    color: inherit;
+}
+
+.markdown-content del em,
+.markdown-content em del {
+    text-decoration: line-through;
+    font-style: italic;
+    color: inherit;
+}
+
+.markdown-content del strong em,
+.markdown-content strong del em,
+.markdown-content em del strong,
+.markdown-content strong em del {
+    text-decoration: line-through;
+    font-weight: 700;
+    font-style: italic;
+    color: inherit;
+}

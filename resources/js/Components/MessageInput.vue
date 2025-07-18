@@ -13,6 +13,8 @@ import {
     ListBulletIcon,
     ChatBubbleLeftRightIcon,
     BoldIcon,
+    ItalicIcon,
+    MinusIcon,
 } from '@heroicons/vue/24/outline';
 import axios from 'axios';
 import MarkdownIt from 'markdown-it';
@@ -392,6 +394,82 @@ const convertToBold = () => {
     }
 };
 
+// 選択されたテキストを斜体形式に変換
+const convertToItalic = () => {
+    const textarea = document.querySelector('textarea');
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = messageContent.value.substring(start, end);
+    
+    if (selectedText.trim()) {
+        // 選択されたテキストを斜体形式で囲む
+        const italicText = '*' + selectedText + '*';
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            italicText +
+            messageContent.value.substring(end);
+        
+        // カーソル位置を斜体テキストの後ろに
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + italicText.length;
+            textarea.focus();
+        }, 0);
+    } else {
+        // テキストが選択されていない場合は、カーソル位置に斜体テンプレートを挿入
+        const italicTemplate = '*斜体*';
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            italicTemplate +
+            messageContent.value.substring(end);
+        
+        // カーソル位置を斜体テンプレートの中に
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + 1; // * の後ろ
+            textarea.focus();
+        }, 0);
+    }
+};
+
+// 選択されたテキストを取り消し線形式に変換
+const convertToStrikethrough = () => {
+    const textarea = document.querySelector('textarea');
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = messageContent.value.substring(start, end);
+    
+    if (selectedText.trim()) {
+        // 選択されたテキストを取り消し線形式で囲む
+        const strikethroughText = '~~' + selectedText + '~~';
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            strikethroughText +
+            messageContent.value.substring(end);
+        
+        // カーソル位置を取り消し線テキストの後ろに
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + strikethroughText.length;
+            textarea.focus();
+        }, 0);
+    } else {
+        // テキストが選択されていない場合は、カーソル位置に取り消し線テンプレートを挿入
+        const strikethroughTemplate = '~~取り消し線~~';
+        messageContent.value =
+            messageContent.value.substring(0, start) +
+            strikethroughTemplate +
+            messageContent.value.substring(end);
+        
+        // カーソル位置を取り消し線テンプレートの中に
+        setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + 2; // ~~ の後ろ
+            textarea.focus();
+        }, 0);
+    }
+};
+
 // ピッカー外クリックで閉じる
 const handleClickOutside = (event) => {
     if (
@@ -517,6 +595,24 @@ if (typeof window !== 'undefined') {
                         type="button"
                     >
                         <BoldIcon class="h-6 w-6" />
+                    </button>
+                    <!-- 斜体ボタン -->
+                    <button 
+                        @click="convertToItalic"
+                        class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+                        title="斜体に変換"
+                        type="button"
+                    >
+                        <ItalicIcon class="h-6 w-6" />
+                    </button>
+                    <!-- 取り消し線ボタン -->
+                    <button 
+                        @click="convertToStrikethrough"
+                        class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+                        title="取り消し線に変換"
+                        type="button"
+                    >
+                        <MinusIcon class="h-6 w-6" />
                     </button>
                 </div>
                 <div class="flex items-center space-x-2">
